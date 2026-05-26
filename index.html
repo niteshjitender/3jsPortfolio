@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Jitender Singh Chhapola portfolio — an interactive 3D terrain experience.">
+  <meta name="author" content="Jitender Singh Chhapola">
+  <meta name="theme-color" content="#F0F6FF">
+
+  <meta property="og:url" content="https://jitendersinghchhapola.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Jitender Singh Chhapola — Portfolio">
+  <meta property="og:description" content="A cinematic 3D terrain portfolio for a full-stack Software Developer.">
+  <meta property="og:image" content="./assets/img/preview.png">
+
+  <title>Jitender Singh Chhapola — Portfolio</title>
+  <link rel="stylesheet" href="css/terrain-portfolio.css">
+  <link id="theme-stylesheet" rel="stylesheet" href="css/themes/day.css">
+</head>
+
+<body>
+  <main class="terrain-stage" aria-label="3D terrain portfolio">
+    <canvas id="terrain-canvas" aria-label="Interactive 3D terrain"></canvas>
+
+    <header class="glass-navbar" aria-label="Primary navigation">
+      <a class="logo" href="#" aria-label="Portfolio home">PORTFOLIO</a>
+
+      <button class="search-button" type="button" aria-label="Search">
+        <span></span>
+      </button>
+
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to night theme">NIGHT</button>
+
+      <nav class="nav-links" aria-label="Portfolio sections">
+        <a href="#" aria-current="page">HOME</a>
+        <a href="#">PROJECTS</a>
+        <a href="#">ABOUT</a>
+        <a href="#">ACHIEVEMENTS</a>
+        <a href="#">EXTRACURRICULAR</a>
+        <a href="#">CONTACT</a>
+      </nav>
+    </header>
+
+    <aside class="controls-hint" aria-label="Terrain controls">
+      <strong>Path movement</strong>
+      <span>W / ↑ follow path forward</span>
+      <span>S / ↓ follow path backward</span>
+      <span>A / D slight left or right</span>
+    </aside>
+
+    <aside class="section-card" id="section-card" aria-live="polite" hidden>
+      <div class="section-card-visual" aria-hidden="true"></div>
+      <div class="section-card-body">
+        <p class="section-card-kicker" id="section-card-kicker">SECTION</p>
+        <h1 id="section-card-title">Portfolio</h1>
+        <p id="section-card-summary"></p>
+        <ul id="section-card-list"></ul>
+        <a id="section-card-action" href="#">CONTACT ME</a>
+      </div>
+    </aside>
+  </main>
+
+  <script src="js/theme-palettes.js"></script>
+  <script src="js/terrain-portfolio.js"></script>
+</body>
+
+</html>
