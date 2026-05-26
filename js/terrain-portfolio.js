@@ -29,6 +29,7 @@ Promise.all([
   let mesh;
   let texture;
   let path;
+  let valleyTrail;
   let pathProgress = 0.18;
   let sideOffset = 0;
   let data;
@@ -145,6 +146,8 @@ Promise.all([
       replaceTerrainTexture();
     }
 
+    applyValleyTrailTheme();
+
     sectionMarkers.forEach((item) => {
       applyMarkerTheme(item.marker);
       applyGlowTheme(item.glow);
@@ -169,12 +172,14 @@ Promise.all([
       vertices[j + 1] = data[i] * 10;
     }
 
+    path = createCurvyTerrainPath();
     texture = createTerrainTexture();
 
     mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture }));
     scene.add(mesh);
 
-    path = createCurvyTerrainPath();
+    valleyTrail = createValleyTrail();
+    scene.add(valleyTrail);
     createSectionMarkers();
     updateCameraAlongPath(0);
 
@@ -258,6 +263,94 @@ Promise.all([
     }
 
     return bestX;
+  }
+
+  function createValleyTrail() {
+    const group = new THREE.Group();
+    const glow = createTrailMesh(260, 7, activeTheme.trail.glow, activeTheme.trail.glowOpacity, THREE.AdditiveBlending);
+    const surface = createTrailMesh(132, 10, activeTheme.trail.surface, activeTheme.trail.surfaceOpacity, THREE.NormalBlending);
+    const highlight = createTrailMesh(42, 13, activeTheme.trail.edge, activeTheme.trail.edgeOpacity, THREE.AdditiveBlending);
+
+    glow.renderOrder = 1;
+    surface.renderOrder = 2;
+    highlight.renderOrder = 3;
+    group.add(glow, surface, highlight);
+    group.userData.glow = glow;
+    group.userData.surface = surface;
+    group.userData.highlight = highlight;
+    return group;
+  }
+
+  function createTrailMesh(width, heightOffset, color, opacity, blending) {
+    const lengthSegments = 150;
+    const widthSegments = 8;
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+
+    for (let row = 0; row <= lengthSegments; row += 1) {
+      const progress = row / lengthSegments;
+      const center = path.getPointAt(progress);
+      const tangent = path.getTangentAt(progress).normalize();
+      const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+      const taper = 0.5 + Math.sin(progress * Math.PI) * 0.5;
+      const localWidth = width * (0.42 + taper * 0.58);
+
+      for (let column = 0; column <= widthSegments; column += 1) {
+        const lateral = (column / widthSegments - 0.5) * localWidth;
+        const point = center.clone().addScaledVector(side, lateral);
+        const edgeDistance = Math.abs(column / widthSegments - 0.5) * 2;
+        const crown = (1 - edgeDistance) * 4;
+
+        point.y = getTerrainHeight(point.x, point.z) + heightOffset + crown;
+        positions.push(point.x, point.y, point.z);
+        uvs.push(column / widthSegments, progress);
+      }
+    }
+
+    for (let row = 0; row < lengthSegments; row += 1) {
+      for (let column = 0; column < widthSegments; column += 1) {
+        const vertexIndex = row * (widthSegments + 1) + column;
+        indices.push(
+          vertexIndex,
+          vertexIndex + 1,
+          vertexIndex + widthSegments + 1,
+          vertexIndex + 1,
+          vertexIndex + widthSegments + 2,
+          vertexIndex + widthSegments + 1
+        );
+      }
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setIndex(indices);
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.computeVertexNormals();
+
+    return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+      side: THREE.DoubleSide,
+      depthTest: true,
+      depthWrite: false,
+      blending,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1
+    }));
+  }
+
+  function applyValleyTrailTheme() {
+    if (!valleyTrail || !activeTheme.trail) return;
+
+    valleyTrail.userData.glow.material.color.setHex(activeTheme.trail.glow);
+    valleyTrail.userData.glow.material.opacity = activeTheme.trail.glowOpacity;
+    valleyTrail.userData.surface.material.color.setHex(activeTheme.trail.surface);
+    valleyTrail.userData.surface.material.opacity = activeTheme.trail.surfaceOpacity;
+    valleyTrail.userData.highlight.material.color.setHex(activeTheme.trail.edge);
+    valleyTrail.userData.highlight.material.opacity = activeTheme.trail.edgeOpacity;
   }
 
   function animate() {
@@ -950,7 +1043,7 @@ Promise.all([
 
       shade = vector3.dot(sun);
 
-      const baseColor = getTerrainPaletteColor(heightData[j]);
+      let baseColor = getTerrainPaletteColor(heightData[j]);
       const shadow = THREE.MathUtils.clamp(shade, 0.18, 1);
       const light = 0.48 + shadow * 0.62;
       const haze = THREE.MathUtils.smoothstep(heightData[j] / 255, 0.42, 0.88) * 18;

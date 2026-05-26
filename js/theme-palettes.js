@@ -10,6 +10,14 @@ window.PORTFOLIO_THEMES = {
       high: [194, 232, 255],
       snow: [246, 252, 255]
     },
+    trail: {
+      surface: 0xf0f7ff,
+      edge: 0xfff3d6,
+      glow: 0x22d3ee,
+      surfaceOpacity: 0.78,
+      edgeOpacity: 0,
+      glowOpacity: 0
+    },
     marker: {
       core: 0x9ff7ff,
       halo: 0x22d3ee,
@@ -35,6 +43,14 @@ window.PORTFOLIO_THEMES = {
       mid: [19, 34, 58],
       high: [39, 83, 138],
       snow: [118, 164, 204]
+    },
+    trail: {
+      surface: 0x24476f,
+      edge: 0xffecc1,
+      glow: 0x22d3ee,
+      surfaceOpacity: 0.78,
+      edgeOpacity: 0,
+      glowOpacity: 0
     },
     marker: {
       core: 0x75f2ff,
