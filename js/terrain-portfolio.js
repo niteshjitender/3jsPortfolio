@@ -12,6 +12,7 @@ Promise.all([
   const themes = window.PORTFOLIO_THEMES || {};
   const themeStylesheet = document.querySelector('#theme-stylesheet');
   const themeToggle = document.querySelector('#theme-toggle');
+  const navLinks = Array.from(document.querySelectorAll('.nav-link'));
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   const cardTargetNdc = new THREE.Vector3(0.68, 0.08, 0.58);
   const worldWidth = 256;
@@ -29,7 +30,7 @@ Promise.all([
   let mesh;
   let texture;
   let path;
-  let valleyTrail;
+  let trailSamples = [];
   let pathProgress = 0.18;
   let sideOffset = 0;
   let data;
@@ -93,6 +94,7 @@ Promise.all([
   ];
 
   initThemeControls();
+  initNavLinks();
   init();
 
   function initThemeControls() {
@@ -114,6 +116,35 @@ Promise.all([
     storeThemeName(activeThemeName);
     applyThemeDocument();
     applyThemeToScene();
+  }
+
+  function initNavLinks() {
+    navLinks.forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        const sectionName = link.dataset.section;
+
+        if (sectionName === 'home') {
+          moveToPathProgress(0.18);
+          return;
+        }
+
+        const section = sections.find((item) => item.title === sectionName);
+        if (!section) return;
+
+        moveToPathProgress(Math.max(section.progress - 0.045, 0));
+      });
+    });
+  }
+
+  function moveToPathProgress(progress) {
+    pathProgress = THREE.MathUtils.clamp(progress, 0, 1);
+    sideOffset = 0;
+
+    if (path) {
+      updateCameraAlongPath(0);
+      updateActiveNavLink();
+    }
   }
 
   function applyThemeDocument() {
@@ -141,12 +172,11 @@ Promise.all([
 
     scene.background.setHex(activeTheme.sceneBg);
     scene.fog.color.setHex(activeTheme.fog);
+    scene.fog.density = activeTheme.fogDensity ?? 0.0016;
 
     if (mesh && data) {
       replaceTerrainTexture();
     }
-
-    applyValleyTrailTheme();
 
     sectionMarkers.forEach((item) => {
       applyMarkerTheme(item.marker);
@@ -160,7 +190,7 @@ Promise.all([
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(activeTheme.sceneBg);
-    scene.fog = new THREE.FogExp2(activeTheme.fog, 0.0025);
+    scene.fog = new THREE.FogExp2(activeTheme.fog, activeTheme.fogDensity ?? 0.0016);
 
     data = generateHeight(worldWidth, worldDepth);
 
@@ -173,13 +203,12 @@ Promise.all([
     }
 
     path = createCurvyTerrainPath();
+    trailSamples = createTrailSamples();
     texture = createTerrainTexture();
 
     mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture }));
     scene.add(mesh);
 
-    valleyTrail = createValleyTrail();
-    scene.add(valleyTrail);
     createSectionMarkers();
     updateCameraAlongPath(0);
 
@@ -219,6 +248,19 @@ Promise.all([
     });
 
     return new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.42);
+  }
+
+  function createTrailSamples() {
+    const samples = [];
+    const sampleCount = 180;
+
+    for (let index = 0; index < sampleCount; index += 1) {
+      const progress = index / (sampleCount - 1);
+      const point = path.getPointAt(progress);
+      samples.push({ x: point.x, z: point.z });
+    }
+
+    return samples;
   }
 
   function buildValleyPath() {
@@ -265,99 +307,36 @@ Promise.all([
     return bestX;
   }
 
-  function createValleyTrail() {
-    const group = new THREE.Group();
-    const glow = createTrailMesh(260, 7, activeTheme.trail.glow, activeTheme.trail.glowOpacity, THREE.AdditiveBlending);
-    const surface = createTrailMesh(132, 10, activeTheme.trail.surface, activeTheme.trail.surfaceOpacity, THREE.NormalBlending);
-    const highlight = createTrailMesh(42, 13, activeTheme.trail.edge, activeTheme.trail.edgeOpacity, THREE.AdditiveBlending);
-
-    glow.renderOrder = 1;
-    surface.renderOrder = 2;
-    highlight.renderOrder = 3;
-    group.add(glow, surface, highlight);
-    group.userData.glow = glow;
-    group.userData.surface = surface;
-    group.userData.highlight = highlight;
-    return group;
-  }
-
-  function createTrailMesh(width, heightOffset, color, opacity, blending) {
-    const lengthSegments = 150;
-    const widthSegments = 8;
-    const positions = [];
-    const uvs = [];
-    const indices = [];
-
-    for (let row = 0; row <= lengthSegments; row += 1) {
-      const progress = row / lengthSegments;
-      const center = path.getPointAt(progress);
-      const tangent = path.getTangentAt(progress).normalize();
-      const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-      const taper = 0.5 + Math.sin(progress * Math.PI) * 0.5;
-      const localWidth = width * (0.42 + taper * 0.58);
-
-      for (let column = 0; column <= widthSegments; column += 1) {
-        const lateral = (column / widthSegments - 0.5) * localWidth;
-        const point = center.clone().addScaledVector(side, lateral);
-        const edgeDistance = Math.abs(column / widthSegments - 0.5) * 2;
-        const crown = (1 - edgeDistance) * 4;
-
-        point.y = getTerrainHeight(point.x, point.z) + heightOffset + crown;
-        positions.push(point.x, point.y, point.z);
-        uvs.push(column / widthSegments, progress);
-      }
-    }
-
-    for (let row = 0; row < lengthSegments; row += 1) {
-      for (let column = 0; column < widthSegments; column += 1) {
-        const vertexIndex = row * (widthSegments + 1) + column;
-        indices.push(
-          vertexIndex,
-          vertexIndex + 1,
-          vertexIndex + widthSegments + 1,
-          vertexIndex + 1,
-          vertexIndex + widthSegments + 2,
-          vertexIndex + widthSegments + 1
-        );
-      }
-    }
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setIndex(indices);
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    geometry.computeVertexNormals();
-
-    return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity,
-      side: THREE.DoubleSide,
-      depthTest: true,
-      depthWrite: false,
-      blending,
-      polygonOffset: true,
-      polygonOffsetFactor: -1,
-      polygonOffsetUnits: -1
-    }));
-  }
-
-  function applyValleyTrailTheme() {
-    if (!valleyTrail || !activeTheme.trail) return;
-
-    valleyTrail.userData.glow.material.color.setHex(activeTheme.trail.glow);
-    valleyTrail.userData.glow.material.opacity = activeTheme.trail.glowOpacity;
-    valleyTrail.userData.surface.material.color.setHex(activeTheme.trail.surface);
-    valleyTrail.userData.surface.material.opacity = activeTheme.trail.surfaceOpacity;
-    valleyTrail.userData.highlight.material.color.setHex(activeTheme.trail.edge);
-    valleyTrail.userData.highlight.material.opacity = activeTheme.trail.edgeOpacity;
-  }
-
   function animate() {
     const delta = Math.min(clock.getDelta(), 0.04);
     updatePathMovement(delta);
     updateSectionMarkers(delta);
+    updateActiveNavLink();
     renderer.render(scene, camera);
+  }
+
+  function updateActiveNavLink() {
+    if (!navLinks.length) return;
+
+    let activeSection = 'home';
+    let closestDistance = Infinity;
+
+    sections.forEach((section) => {
+      const distance = Math.abs(pathProgress - section.progress);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        activeSection = section.title;
+      }
+    });
+
+    if (closestDistance > 0.055) {
+      activeSection = 'home';
+    }
+
+    navLinks.forEach((link) => {
+      link.classList.toggle('is-active', link.dataset.section === activeSection);
+    });
   }
 
   function updatePathMovement(delta) {
@@ -442,7 +421,7 @@ Promise.all([
       opacity: 0,
       side: THREE.BackSide,
       depthWrite: false,
-      blending: THREE.AdditiveBlending
+      blending: getThemeBlending(activeTheme.marker.blending)
     });
     const haloMaterial = new THREE.MeshBasicMaterial({
       color: activeTheme.marker.halo,
@@ -450,7 +429,7 @@ Promise.all([
       opacity: 0,
       side: THREE.BackSide,
       depthWrite: false,
-      blending: THREE.AdditiveBlending
+      blending: getThemeBlending(activeTheme.marker.blending)
     });
     const orbitParticles = createOrbitParticles();
 
@@ -470,7 +449,7 @@ Promise.all([
         opacity: 0,
         side: THREE.DoubleSide,
         depthWrite: false,
-        blending: THREE.AdditiveBlending
+        blending: getThemeBlending(activeTheme.marker.blending)
       });
       const shard = new THREE.Mesh(createShardGeometry(), material);
 
@@ -582,7 +561,7 @@ Promise.all([
       transparent: true,
       opacity: 0,
       depthWrite: false,
-      blending: THREE.AdditiveBlending
+      blending: getThemeBlending(activeTheme.marker.blending)
     });
     const particles = new THREE.Points(geometry, material);
     particles.userData.angles = angles;
@@ -697,8 +676,14 @@ Promise.all([
     marker.userData.haloMaterial.color.setHex(activeTheme.marker.halo);
     marker.userData.orbitParticles.material.color.setHex(activeTheme.marker.orbit);
 
+    const blending = getThemeBlending(activeTheme.marker.blending);
+    setMaterialBlending(marker.userData.coreMaterial, blending);
+    setMaterialBlending(marker.userData.haloMaterial, blending);
+    setMaterialBlending(marker.userData.orbitParticles.material, blending);
+
     marker.userData.shards.forEach((shard) => {
       shard.mesh.material.color.copy(getShardColor(shard.brightness));
+      setMaterialBlending(shard.mesh.material, blending);
     });
 
     const labelTexture = createTextTexture(marker.userData.labelText, {
@@ -713,6 +698,17 @@ Promise.all([
     marker.userData.labelSprite.material.map = labelTexture;
     marker.userData.labelSprite.material.needsUpdate = true;
     previousTexture.dispose();
+  }
+
+  function getThemeBlending(blendingName) {
+    return blendingName === 'normal' ? THREE.NormalBlending : THREE.AdditiveBlending;
+  }
+
+  function setMaterialBlending(material, blending) {
+    if (material.blending === blending) return;
+
+    material.blending = blending;
+    material.needsUpdate = true;
   }
 
   function applyGlowTheme(glow) {
@@ -744,22 +740,23 @@ Promise.all([
 
       const dissolveProgress = item.state === 'idle' ? 0 : THREE.MathUtils.clamp(item.dissolveTime / 1.9, 0, 1);
       const visibleMarkerOpacity = markerOpacity * (1 - dissolveProgress);
+      const themedMarkerOpacity = visibleMarkerOpacity * (activeTheme.marker.opacityFactor ?? 1);
 
       item.marker.visible = visibleMarkerOpacity > 0.02;
       item.glow.visible = visibleMarkerOpacity > 0.02;
       item.marker.lookAt(camera.position);
       item.marker.scale.setScalar(pulse * 0.72);
-      updatePowerSphereIdle(item.marker, visibleMarkerOpacity, delta);
+      updatePowerSphereIdle(item.marker, themedMarkerOpacity, delta);
 
       item.marker.userData.fadeMaterials.forEach((material, index) => {
         const base = index === 1 ? 0.18 : index === 2 ? 0.07 : index === 3 ? 0.36 : 0.46;
-        material.opacity = visibleMarkerOpacity * base;
+        material.opacity = themedMarkerOpacity * base;
       });
-      item.glow.material.opacity = visibleMarkerOpacity * 0.28;
+      item.glow.material.opacity = themedMarkerOpacity * 0.28;
 
       if (item.state !== 'idle') {
         item.dissolveTime += delta;
-        updatePowerSphereDissolve(item.marker, dissolveProgress, markerOpacity);
+        updatePowerSphereDissolve(item.marker, dissolveProgress, markerOpacity * (activeTheme.marker.opacityFactor ?? 1));
         updateDissolveParticles(item, dissolveProgress);
       }
     });
@@ -819,7 +816,7 @@ Promise.all([
     item.cardMaterialized = false;
     item.cardContentShown = false;
     item.particles.visible = true;
-    item.particles.material.opacity = 0.56;
+    item.particles.material.opacity = 0.56 * (activeTheme.marker.opacityFactor ?? 1);
   }
 
   function updateDissolveParticles(item, progress) {
@@ -845,7 +842,7 @@ Promise.all([
     }
 
     item.particles.geometry.attributes.position.needsUpdate = true;
-    item.particles.material.opacity = Math.sin(progress * Math.PI) * 0.46 + Math.pow(1 - progress, 1.6) * 0.1;
+    item.particles.material.opacity = (Math.sin(progress * Math.PI) * 0.46 + Math.pow(1 - progress, 1.6) * 0.1) * (activeTheme.marker.opacityFactor ?? 1);
 
     if (!item.cardShellStarted && progress > 0.34) {
       item.cardShellStarted = true;
@@ -1005,6 +1002,41 @@ Promise.all([
     ];
   }
 
+  function getTrailBlend(worldX, worldZ) {
+    if (!trailSamples.length || !activeTheme.trail) {
+      return { core: 0, edge: 0, total: 0 };
+    }
+
+    let nearestDistanceSquared = Infinity;
+
+    trailSamples.forEach((sample) => {
+      const distanceX = worldX - sample.x;
+      const distanceZ = worldZ - sample.z;
+      const distanceSquared = distanceX * distanceX + distanceZ * distanceZ;
+
+      if (distanceSquared < nearestDistanceSquared) {
+        nearestDistanceSquared = distanceSquared;
+      }
+    });
+
+    const distance = Math.sqrt(nearestDistanceSquared);
+    const { width: trailWidth, falloff } = activeTheme.trail;
+
+    if (distance > falloff) {
+      return { core: 0, edge: 0, total: 0 };
+    }
+
+    const core = 1 - THREE.MathUtils.smoothstep(distance, trailWidth * 0.42, trailWidth);
+    const shoulder = 1 - THREE.MathUtils.smoothstep(distance, trailWidth, falloff);
+    const edge = shoulder * (1 - core);
+
+    return {
+      core,
+      edge,
+      total: Math.max(core, edge)
+    };
+  }
+
   function clampByte(value) {
     return THREE.MathUtils.clamp(Math.round(value), 0, 255);
   }
@@ -1043,14 +1075,35 @@ Promise.all([
 
       shade = vector3.dot(sun);
 
-      let baseColor = getTerrainPaletteColor(heightData[j]);
+      const terrainX = j % width;
+      const terrainZ = ~~(j / width);
+      const worldX = terrainX / (width - 1) * terrainSize - terrainHalf;
+      const worldZ = terrainZ / (height - 1) * terrainSize - terrainHalf;
+      const trailBlend = getTrailBlend(worldX, worldZ);
+      const baseColor = getTerrainPaletteColor(heightData[j]);
       const shadow = THREE.MathUtils.clamp(shade, 0.18, 1);
       const light = 0.48 + shadow * 0.62;
-      const haze = THREE.MathUtils.smoothstep(heightData[j] / 255, 0.42, 0.88) * 18;
+      const haze = THREE.MathUtils.smoothstep(heightData[j] / 255, 0.42, 0.88) * 12;
+      let litColor = [
+        baseColor[0] * light + haze,
+        baseColor[1] * light + haze,
+        baseColor[2] * light + haze
+      ];
 
-      imageData[i] = clampByte(baseColor[0] * light + haze);
-      imageData[i + 1] = clampByte(baseColor[1] * light + haze);
-      imageData[i + 2] = clampByte(baseColor[2] * light + haze);
+      if (trailBlend.total > 0) {
+        const centerStrength = trailBlend.core * activeTheme.trail.strength;
+        const edgeStrength = trailBlend.edge * (activeTheme.trail.edgeStrength ?? activeTheme.trail.strength * 0.5);
+
+        litColor = mixPaletteColor(litColor, activeTheme.trail.surface, centerStrength);
+
+        if (activeTheme.trail.edge) {
+          litColor = mixPaletteColor(litColor, activeTheme.trail.edge, edgeStrength);
+        }
+      }
+
+      imageData[i] = clampByte(litColor[0]);
+      imageData[i + 1] = clampByte(litColor[1]);
+      imageData[i + 2] = clampByte(litColor[2]);
     }
 
     context.putImageData(image, 0, 0);

@@ -23,23 +23,24 @@
   <main class="terrain-stage" aria-label="3D terrain portfolio">
     <canvas id="terrain-canvas" aria-label="Interactive 3D terrain"></canvas>
 
-    <header class="glass-navbar" aria-label="Primary navigation">
-      <a class="logo" href="#" aria-label="Portfolio home">PORTFOLIO</a>
-
-      <button class="search-button" type="button" aria-label="Search">
-        <span></span>
-      </button>
-
-      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to night theme">NIGHT</button>
-
-      <nav class="nav-links" aria-label="Portfolio sections">
-        <a href="#" aria-current="page">HOME</a>
-        <a href="#">PROJECTS</a>
-        <a href="#">ABOUT</a>
-        <a href="#">ACHIEVEMENTS</a>
-        <a href="#">EXTRACURRICULAR</a>
-        <a href="#">CONTACT</a>
-      </nav>
+    <header class="portfolio-nav" aria-label="Portfolio navigation">
+      <a class="portfolio-brand" href="#home" data-section="home">PORTFOLIO</a>
+      <div class="portfolio-nav-actions">
+        <button class="nav-search" type="button" aria-label="Search portfolio">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m21 21-4.35-4.35m2.1-5.4a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" />
+          </svg>
+        </button>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to night theme">NIGHT</button>
+        <nav class="portfolio-links" aria-label="Sections">
+          <a class="nav-link is-active" href="#home" data-section="home">HOME</a>
+          <a class="nav-link" href="#projects" data-section="PROJECTS">PROJECTS</a>
+          <a class="nav-link" href="#about" data-section="ABOUT">ABOUT</a>
+          <a class="nav-link" href="#achievements" data-section="ACHIEVEMENTS">ACHIEVEMENTS</a>
+          <a class="nav-link" href="#extracurricular" data-section="EXTRACURRICULAR">EXTRACURRICULAR</a>
+          <a class="nav-link" href="#contact" data-section="CONTACT">CONTACT</a>
+        </nav>
+      </div>
     </header>
 
     <aside class="controls-hint" aria-label="Terrain controls">

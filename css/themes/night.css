@@ -5,8 +5,8 @@
   --glass-strong: rgba(30, 42, 69, 0.88);
   --stage-bg: #0b0f1a;
   --stage-overlay:
-    linear-gradient(180deg, rgba(30, 42, 69, 0.18), rgba(2, 10, 24, 0.12) 42%, rgba(0, 0, 0, 0.28)),
-    radial-gradient(circle at 44% 28%, rgba(255, 236, 193, 0.32), transparent 5%);
+    linear-gradient(180deg, rgba(30, 42, 69, 0.12), rgba(2, 10, 24, 0.08) 42%, rgba(0, 0, 0, 0.18)),
+    radial-gradient(circle at 44% 28%, rgba(255, 236, 193, 0.22), transparent 5%);
   --panel-border: rgba(130, 177, 216, 0.32);
   --nav-bg: linear-gradient(135deg, rgba(30, 42, 69, 0.78), rgba(11, 15, 26, 0.56));
   --panel-shadow: 0 18px 45px rgba(0, 0, 0, 0.4);
