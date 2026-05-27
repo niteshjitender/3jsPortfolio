@@ -1,6 +1,8 @@
 window.PORTFOLIO_THEMES = {
   day: {
     css: 'css/themes/day.css',
+    modeLabel: 'DAY — Professional Mode',
+    helperText: 'Focused recruiter view',
     meta: '#F0F6FF',
     sceneBg: 0xbde9ff,
     fog: 0xd9f3ff,
@@ -26,6 +28,9 @@ window.PORTFOLIO_THEMES = {
       particle: 0x22d3ee,
       blending: 'normal',
       opacityFactor: 0.76,
+      orbitFactor: 0.54,
+      glowFactor: 0.52,
+      particleFactor: 0.48,
       labelText: '#0A2A5A',
       labelBackground: 'rgba(230, 242, 255, 0.52)',
       glowStops: [
@@ -38,6 +43,8 @@ window.PORTFOLIO_THEMES = {
   },
   night: {
     css: 'css/themes/night.css',
+    modeLabel: 'NIGHT — Creative Mode',
+    helperText: 'Cinematic creative journey',
     meta: '#0B0F1A',
     sceneBg: 0x0b0f1a,
     fog: 0x0f1e34,
@@ -63,6 +70,9 @@ window.PORTFOLIO_THEMES = {
       particle: 0x7ff4ff,
       blending: 'additive',
       opacityFactor: 0.88,
+      orbitFactor: 1,
+      glowFactor: 1,
+      particleFactor: 1,
       labelText: '#FFFFFF',
       labelBackground: 'rgba(30, 42, 69, 0.34)',
       glowStops: [

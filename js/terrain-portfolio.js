@@ -2,6 +2,10 @@ Promise.all([
   import('https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js'),
   import('https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/math/ImprovedNoise.js')
 ]).then(([THREE, { ImprovedNoise }]) => {
+  const appViews = Array.from(document.querySelectorAll('.app-view'));
+  const landingView = document.querySelector('#landing-view');
+  const journeyView = document.querySelector('#journey-view');
+  const profileView = document.querySelector('#profile-view');
   const canvas = document.querySelector('#terrain-canvas');
   const sectionCardElement = document.querySelector('#section-card');
   const sectionCardKicker = document.querySelector('#section-card-kicker');
@@ -10,10 +14,17 @@ Promise.all([
   const sectionCardList = document.querySelector('#section-card-list');
   const sectionCardAction = document.querySelector('#section-card-action');
   const themes = window.PORTFOLIO_THEMES || {};
+  const content = window.PORTFOLIO_CONTENT || {};
   const themeStylesheet = document.querySelector('#theme-stylesheet');
   const themeToggle = document.querySelector('#theme-toggle');
-  const navLinks = Array.from(document.querySelectorAll('.nav-link'));
+  const modeHelper = document.querySelector('#mode-helper');
+  const journeyStepCount = document.querySelector('#journey-step-count');
+  const journeyCurrentLabel = document.querySelector('#journey-current-label');
+  const journeyStepTrack = document.querySelector('#journey-step-track');
+  const mobileMarkerList = document.querySelector('#mobile-marker-list');
+  const routeButtons = Array.from(document.querySelectorAll('[data-route]'));
   const metaTheme = document.querySelector('meta[name="theme-color"]');
+  const journeyMarkers = content.journeyMarkers || [];
   const cardTargetNdc = new THREE.Vector3(0.68, 0.08, 0.58);
   const worldWidth = 256;
   const worldDepth = 256;
@@ -31,71 +42,25 @@ Promise.all([
   let texture;
   let path;
   let trailSamples = [];
-  let pathProgress = 0.18;
+  let pathProgress = journeyMarkers[0]?.progress ?? 0.18;
   let sideOffset = 0;
   let data;
+  let currentView = 'landing';
+  let currentMarkerIndex = 0;
+  let rendererReady = false;
   const storedThemeName = getStoredThemeName();
   let activeThemeName = themes[storedThemeName] ? storedThemeName : 'day';
   let activeTheme = themes[activeThemeName] || themes.day;
   const sectionMarkers = [];
   const clock = new THREE.Clock();
   const keys = new Set();
-  const sections = [
-    {
-      title: 'PROJECTS',
-      progress: 0.26,
-      kicker: 'SECTION: PROJECTS',
-      heading: 'Projects',
-      summary: 'Selected builds and experiments from Android, automation, and web portfolio work.',
-      lines: ['LittlePhone · Android finding app', 'Portfolio · interactive terrain site', 'ShareQuote · Python automation', 'AnimalX · injured animal tracking'],
-      action: 'VIEW PROJECTS',
-      href: '#'
-    },
-    {
-      title: 'ABOUT',
-      progress: 0.39,
-      kicker: 'SECTION: ABOUT ME',
-      heading: 'Jitender Singh Chhapola',
-      summary: 'Software Developer with 3+ years of full-stack experience across Java, Spring Boot, Angular, Node.js, MongoDB, Kafka, and Docker.',
-      lines: ['Backend-heavy full-stack developer', 'Builds scalable microservices', 'Comfortable across product and platform work'],
-      action: 'CONTACT ME',
-      href: 'mailto:niteshjitender@gmail.com?subject=Portfolio%20Opportunity%20for%20Jitender'
-    },
-    {
-      title: 'ACHIEVEMENTS',
-      progress: 0.54,
-      kicker: 'SECTION: ACHIEVEMENTS',
-      heading: 'Achievements',
-      summary: 'Coding practice, certifications, and professional growth milestones.',
-      lines: ['LeetCode 250+ problems', 'InterviewBit 6895+ score', 'Android, SQL, and Web Scraping certifications'],
-      action: 'VIEW DETAILS',
-      href: '#'
-    },
-    {
-      title: 'EXTRACURRICULAR',
-      progress: 0.68,
-      kicker: 'SECTION: EXTRACURRICULAR',
-      heading: 'Extracurricular',
-      summary: 'Competitive events and activities beyond software engineering.',
-      lines: ['KVS Science National participant', 'KVS National Sports Meet · Judo', 'Inter-NIT Sports Meet · High Jump'],
-      action: 'SEE MORE',
-      href: '#'
-    },
-    {
-      title: 'CONTACT',
-      progress: 0.82,
-      kicker: 'SECTION: CONTACT',
-      heading: 'Contact',
-      summary: 'Reach out for roles, collaboration, or a quick technical conversation.',
-      lines: ['niteshjitender@gmail.com', '+91-8901567825', 'LinkedIn · GitHub · X'],
-      action: 'CONTACT ME',
-      href: 'mailto:niteshjitender@gmail.com?subject=Portfolio%20Opportunity%20for%20Jitender'
-    }
-  ];
 
   initThemeControls();
-  initNavLinks();
+  initViewRouting();
+  initJourneyProgress();
+  initMobileJourneyFallback();
   init();
+  renderRoute();
 
   function initThemeControls() {
     applyThemeDocument();
@@ -105,6 +70,17 @@ Promise.all([
     themeToggle.addEventListener('click', () => {
       const nextTheme = activeThemeName === 'night' ? 'day' : 'night';
       switchTheme(nextTheme);
+    });
+  }
+
+  function initViewRouting() {
+    window.addEventListener('hashchange', renderRoute);
+
+    routeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const targetRoute = button.dataset.route;
+        if (targetRoute) window.location.hash = targetRoute;
+      });
     });
   }
 
@@ -118,32 +94,146 @@ Promise.all([
     applyThemeToScene();
   }
 
-  function initNavLinks() {
-    navLinks.forEach((link) => {
-      link.addEventListener('click', (event) => {
-        event.preventDefault();
-        const sectionName = link.dataset.section;
+  function initJourneyProgress() {
+    if (!journeyStepTrack || !journeyMarkers.length) return;
 
-        if (sectionName === 'home') {
-          moveToPathProgress(0.18);
-          return;
-        }
+    journeyStepTrack.innerHTML = journeyMarkers.map((marker, index) => (
+      `<button class="journey-step" type="button" data-marker-index="${index}" aria-label="Focus ${marker.title}"></button>`
+    )).join('');
 
-        const section = sections.find((item) => item.title === sectionName);
-        if (!section) return;
+    journeyStepTrack.querySelectorAll('.journey-step').forEach((step) => {
+      step.addEventListener('click', () => {
+        const markerIndex = Number(step.dataset.markerIndex);
+        const marker = journeyMarkers[markerIndex];
+        if (!marker) return;
 
-        moveToPathProgress(Math.max(section.progress - 0.045, 0));
+        window.location.hash = '#journey';
+        moveToPathProgress(marker.progress);
       });
     });
+
+    updateJourneyProgress();
+  }
+
+  function initMobileJourneyFallback() {
+    if (!mobileMarkerList || !journeyMarkers.length) return;
+
+    mobileMarkerList.innerHTML = journeyMarkers.map((marker, index) => (
+      `<article class="mobile-marker-card">
+        <h3>${index + 1}. ${marker.title}</h3>
+        <p>${marker.description}</p>
+        <a href="#${marker.fullProfileAnchor}">View Details</a>
+      </article>`
+    )).join('');
   }
 
   function moveToPathProgress(progress) {
     pathProgress = THREE.MathUtils.clamp(progress, 0, 1);
     sideOffset = 0;
+    hideSectionCard();
 
     if (path) {
+      sectionMarkers.forEach((item) => {
+        if (Math.abs(item.section.progress - pathProgress) < 0.01) {
+          resetSectionMarker(item);
+        }
+      });
       updateCameraAlongPath(0);
-      updateActiveNavLink();
+      updateJourneyProgress();
+    }
+  }
+
+  function renderRoute() {
+    const route = getRouteFromHash();
+
+    showView(route.view);
+
+    if (route.view === 'journey') {
+      startJourneyLoop();
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      return;
+    }
+
+    stopJourneyLoop();
+
+    if (route.view === 'profile') {
+      window.requestAnimationFrame(() => scrollToProfileAnchor(route.anchor));
+      return;
+    }
+
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+  }
+
+  function getRouteFromHash() {
+    const hash = window.location.hash.replace('#', '');
+
+    if (hash === 'journey') {
+      return { view: 'journey' };
+    }
+
+    if (hash.startsWith('profile')) {
+      return { view: 'profile', anchor: hash };
+    }
+
+    return { view: 'landing' };
+  }
+
+  function showView(viewName) {
+    const previousView = currentView;
+    currentView = viewName;
+    document.body.dataset.view = viewName;
+
+    appViews.forEach((view) => {
+      view.hidden = true;
+    });
+
+    if (viewName === 'journey') {
+      journeyView.hidden = false;
+      if (previousView !== 'journey') {
+        resetJourneyMarkers();
+      }
+      return;
+    }
+
+    if (viewName === 'profile') {
+      profileView.hidden = false;
+      return;
+    }
+
+    landingView.hidden = false;
+  }
+
+  function resetJourneyMarkers() {
+    sectionMarkers.forEach((item) => resetSectionMarker(item));
+    hideSectionCard();
+    updateJourneyProgress();
+  }
+
+  function scrollToProfileAnchor(anchor) {
+    const target = anchor ? document.querySelector(`#${anchor}`) : null;
+
+    if (target) {
+      target.scrollIntoView({ block: 'start' });
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  function startJourneyLoop() {
+    if (!renderer || !rendererReady) return;
+
+    onWindowResize();
+    clock.getDelta();
+    renderer.setAnimationLoop(animate);
+  }
+
+  function stopJourneyLoop() {
+    keys.clear();
+    hideSectionCard();
+
+    if (renderer) {
+      renderer.setAnimationLoop(null);
     }
   }
 
@@ -161,9 +251,15 @@ Promise.all([
     }
 
     if (themeToggle) {
-      const nextThemeLabel = activeThemeName === 'night' ? 'day' : 'night';
-      themeToggle.textContent = nextThemeLabel.toUpperCase();
-      themeToggle.setAttribute('aria-label', `Switch to ${nextThemeLabel} theme`);
+      const nextTheme = activeThemeName === 'night' ? 'day' : 'night';
+      const nextThemeLabel = themes[nextTheme]?.modeLabel || nextTheme;
+      themeToggle.textContent = activeTheme.modeLabel || activeThemeName.toUpperCase();
+      themeToggle.title = activeTheme.helperText || '';
+      themeToggle.setAttribute('aria-label', `Switch to ${nextThemeLabel}`);
+    }
+
+    if (modeHelper) {
+      modeHelper.textContent = activeTheme.helperText || '';
     }
   }
 
@@ -215,7 +311,7 @@ Promise.all([
     renderer = new THREE.WebGLRenderer({ canvas });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setAnimationLoop(animate);
+    rendererReady = true;
 
     window.addEventListener('resize', onWindowResize);
     window.addEventListener('keydown', onKeyDown);
@@ -229,6 +325,8 @@ Promise.all([
   }
 
   function onKeyDown(event) {
+    if (currentView !== 'journey') return;
+
     const key = event.key.toLowerCase();
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
       event.preventDefault();
@@ -311,31 +409,40 @@ Promise.all([
     const delta = Math.min(clock.getDelta(), 0.04);
     updatePathMovement(delta);
     updateSectionMarkers(delta);
-    updateActiveNavLink();
+    updateJourneyProgress();
     renderer.render(scene, camera);
   }
 
-  function updateActiveNavLink() {
-    if (!navLinks.length) return;
+  function updateJourneyProgress() {
+    if (!journeyMarkers.length) return;
 
-    let activeSection = 'home';
+    let activeIndex = 0;
     let closestDistance = Infinity;
 
-    sections.forEach((section) => {
-      const distance = Math.abs(pathProgress - section.progress);
+    journeyMarkers.forEach((marker, index) => {
+      const distance = Math.abs(pathProgress - marker.progress);
 
       if (distance < closestDistance) {
         closestDistance = distance;
-        activeSection = section.title;
+        activeIndex = index;
       }
     });
 
-    if (closestDistance > 0.055) {
-      activeSection = 'home';
+    currentMarkerIndex = activeIndex;
+
+    if (journeyStepCount) {
+      journeyStepCount.textContent = `${activeIndex + 1} / ${journeyMarkers.length}`;
     }
 
-    navLinks.forEach((link) => {
-      link.classList.toggle('is-active', link.dataset.section === activeSection);
+    if (journeyCurrentLabel) {
+      journeyCurrentLabel.textContent = journeyMarkers[activeIndex].title;
+    }
+
+    if (!journeyStepTrack) return;
+
+    journeyStepTrack.querySelectorAll('.journey-step').forEach((step, index) => {
+      step.classList.toggle('is-active', index === activeIndex);
+      step.classList.toggle('is-complete', index < activeIndex);
     });
   }
 
@@ -378,9 +485,9 @@ Promise.all([
   }
 
   function createSectionMarkers() {
-    sections.forEach((section) => {
+    journeyMarkers.forEach((section) => {
       const anchor = getPathPoint(section.progress);
-      const marker = createLocationMarker(section.title);
+      const marker = createLocationMarker(section.markerLabel || section.title);
       const glow = createGlowSprite(260);
       const particles = createDissolveParticles();
 
@@ -734,6 +841,10 @@ Promise.all([
       const markerOpacity = THREE.MathUtils.clamp(1 - (distance - 360) / 1250, 0.08, 1);
       const pulse = 0.94 + Math.sin(clock.elapsedTime * 2.6 + item.section.progress * 12) * 0.06;
 
+      if (item.state === 'dissolved' && distance > 320) {
+        resetSectionMarker(item);
+      }
+
       if (item.state === 'idle' && distance < 125) {
         activateSectionMarker(item);
       }
@@ -750,9 +861,10 @@ Promise.all([
 
       item.marker.userData.fadeMaterials.forEach((material, index) => {
         const base = index === 1 ? 0.18 : index === 2 ? 0.07 : index === 3 ? 0.36 : 0.46;
-        material.opacity = themedMarkerOpacity * base;
+        const modeFactor = index === 3 ? activeTheme.marker.orbitFactor ?? 1 : 1;
+        material.opacity = themedMarkerOpacity * base * modeFactor;
       });
-      item.glow.material.opacity = themedMarkerOpacity * 0.28;
+      item.glow.material.opacity = themedMarkerOpacity * 0.28 * (activeTheme.marker.glowFactor ?? 1);
 
       if (item.state !== 'idle') {
         item.dissolveTime += delta;
@@ -760,6 +872,15 @@ Promise.all([
         updateDissolveParticles(item, dissolveProgress);
       }
     });
+  }
+
+  function resetSectionMarker(item) {
+    item.state = 'idle';
+    item.dissolveTime = 0;
+    item.cardShellStarted = false;
+    item.cardMaterialized = false;
+    item.cardContentShown = false;
+    item.particles.visible = false;
   }
 
   function updatePowerSphereIdle(marker, opacity, delta) {
@@ -806,7 +927,7 @@ Promise.all([
 
     marker.userData.coreMaterial.opacity = 0.18 * opacity * (1 - easedOpacity);
     marker.userData.haloMaterial.opacity = 0.07 * opacity * (1 - easedOpacity);
-    marker.userData.orbitParticles.material.opacity = 0.36 * opacity * (1 - easedPosition);
+    marker.userData.orbitParticles.material.opacity = 0.36 * opacity * (1 - easedPosition) * (activeTheme.marker.orbitFactor ?? 1);
   }
 
   function activateSectionMarker(item) {
@@ -816,7 +937,7 @@ Promise.all([
     item.cardMaterialized = false;
     item.cardContentShown = false;
     item.particles.visible = true;
-    item.particles.material.opacity = 0.56 * (activeTheme.marker.opacityFactor ?? 1);
+    item.particles.material.opacity = 0.56 * (activeTheme.marker.opacityFactor ?? 1) * (activeTheme.marker.particleFactor ?? 1);
   }
 
   function updateDissolveParticles(item, progress) {
@@ -842,7 +963,9 @@ Promise.all([
     }
 
     item.particles.geometry.attributes.position.needsUpdate = true;
-    item.particles.material.opacity = (Math.sin(progress * Math.PI) * 0.46 + Math.pow(1 - progress, 1.6) * 0.1) * (activeTheme.marker.opacityFactor ?? 1);
+    item.particles.material.opacity = (
+      Math.sin(progress * Math.PI) * 0.46 + Math.pow(1 - progress, 1.6) * 0.1
+    ) * (activeTheme.marker.opacityFactor ?? 1) * (activeTheme.marker.particleFactor ?? 1);
 
     if (!item.cardShellStarted && progress > 0.34) {
       item.cardShellStarted = true;
@@ -868,15 +991,23 @@ Promise.all([
   }
 
   function prepareSectionCard(section) {
-    sectionCardKicker.textContent = section.kicker;
+    const markerIndex = Math.max(journeyMarkers.findIndex((marker) => marker.id === section.id), 0);
+    sectionCardKicker.textContent = `STEP ${markerIndex + 1} / ${journeyMarkers.length}`;
     sectionCardTitle.textContent = section.heading;
-    sectionCardSummary.textContent = section.summary;
-    sectionCardList.innerHTML = section.lines.map((line) => `<li>${line}</li>`).join('');
-    sectionCardAction.textContent = section.action;
-    sectionCardAction.href = section.href;
+    sectionCardSummary.textContent = section.description;
+    sectionCardList.innerHTML = section.bullets.map((line) => `<li>${line}</li>`).join('');
+    sectionCardAction.textContent = 'View Details';
+    sectionCardAction.href = `#${section.fullProfileAnchor}`;
     sectionCardElement.classList.remove('is-building', 'is-materialized', 'is-content-visible');
     sectionCardElement.hidden = false;
     window.requestAnimationFrame(() => sectionCardElement.classList.add('is-building'));
+  }
+
+  function hideSectionCard() {
+    if (!sectionCardElement) return;
+
+    sectionCardElement.classList.remove('is-building', 'is-materialized', 'is-content-visible');
+    sectionCardElement.hidden = true;
   }
 
   function materializeSectionCard() {
