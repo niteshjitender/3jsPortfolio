@@ -4,83 +4,83 @@ window.PORTFOLIO_THEMES = {
     modeLabel: 'DAY — Professional Mode',
     helperText: 'Focused recruiter view',
     meta: '#F0F6FF',
-    sceneBg: 0xbde9ff,
-    fog: 0xd9f3ff,
-    fogDensity: 0.0009,
+    sceneBg: 0xd7efff,
+    fog: 0xe8f7ff,
+    fogDensity: 0.00042,
     terrain: {
-      shadow: [18, 76, 142],
-      mid: [58, 123, 213],
-      high: [148, 207, 246],
-      snow: [246, 252, 255]
+      shadow: [45, 111, 181],
+      mid: [92, 172, 231],
+      high: [169, 220, 249],
+      snow: [230, 247, 255]
     },
     trail: {
-      surface: [205, 232, 244],
-      edge: [34, 168, 225],
-      strength: 0.58,
-      edgeStrength: 0.42,
+      surface: [222, 245, 255],
+      edge: [45, 145, 222],
+      strength: 0.5,
+      edgeStrength: 0.52,
       width: 28,
       falloff: 60
     },
     marker: {
-      core: 0x22d3ee,
-      halo: 0x8defff,
-      orbit: 0x0a68b6,
-      particle: 0x22d3ee,
+      core: 0xf9fdff,
+      halo: 0x8eeaff,
+      orbit: 0x0b66b8,
+      particle: 0xf8fdff,
       blending: 'normal',
-      opacityFactor: 0.76,
-      orbitFactor: 0.54,
-      glowFactor: 0.52,
-      particleFactor: 0.48,
+      opacityFactor: 0.86,
+      orbitFactor: 0.95,
+      glowFactor: 0.42,
+      particleFactor: 0.5,
       labelText: '#0A2A5A',
-      labelBackground: 'rgba(230, 242, 255, 0.52)',
+      labelBackground: 'rgba(248, 253, 255, 0.92)',
       glowStops: [
-        'rgba(255, 243, 214, 0.18)',
-        'rgba(34, 211, 238, 0.12)',
+        'rgba(255, 255, 255, 0.24)',
+        'rgba(34, 211, 238, 0.18)',
         'rgba(58, 123, 213, 0)'
       ],
-      shard: [0.1, 0.6, 0.9]
+      shard: [0.86, 0.96, 1]
     }
   },
   night: {
     css: 'css/themes/night.css',
     modeLabel: 'NIGHT — Creative Mode',
     helperText: 'Cinematic creative journey',
-    meta: '#0B0F1A',
-    sceneBg: 0x0b0f1a,
-    fog: 0x0f1e34,
-    fogDensity: 0.00145,
+    meta: '#1B456D',
+    sceneBg: 0x1b456d,
+    fog: 0x4b7fa8,
+    fogDensity: 0.00052,
     terrain: {
-      shadow: [2, 8, 18],
-      mid: [19, 34, 58],
-      high: [39, 83, 138],
-      snow: [118, 164, 204]
+      shadow: [28, 62, 101],
+      mid: [62, 117, 171],
+      high: [118, 177, 220],
+      snow: [198, 229, 246]
     },
     trail: {
-      surface: [26, 84, 132],
-      edge: [34, 211, 238],
-      strength: 0.6,
-      edgeStrength: 0.5,
+      surface: [46, 111, 158],
+      edge: [80, 226, 248],
+      strength: 0.56,
+      edgeStrength: 0.46,
       width: 30,
       falloff: 64
     },
     marker: {
-      core: 0x75f2ff,
-      halo: 0x13223a,
-      orbit: 0x22d3ee,
-      particle: 0x7ff4ff,
+      core: 0xdffbff,
+      halo: 0x163f69,
+      orbit: 0x48e8ff,
+      particle: 0xbdf8ff,
       blending: 'additive',
-      opacityFactor: 0.88,
+      opacityFactor: 0.86,
       orbitFactor: 1,
-      glowFactor: 1,
-      particleFactor: 1,
+      glowFactor: 0.82,
+      particleFactor: 0.82,
       labelText: '#FFFFFF',
       labelBackground: 'rgba(30, 42, 69, 0.34)',
       glowStops: [
-        'rgba(255, 236, 193, 0.46)',
-        'rgba(34, 211, 238, 0.28)',
+        'rgba(255, 236, 193, 0.34)',
+        'rgba(34, 211, 238, 0.22)',
         'rgba(11, 15, 26, 0)'
       ],
-      shard: [0.08, 0.72, 1]
+      shard: [0.68, 0.94, 1]
     }
   }
 };

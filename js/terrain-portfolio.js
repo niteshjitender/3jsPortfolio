@@ -601,9 +601,10 @@ Promise.all([
       background: activeTheme.marker.labelBackground
     });
 
-    labelSprite.position.y = 2;
-    labelSprite.position.z = 52;
-    labelSprite.scale.set(74, 21, 1);
+    labelSprite.position.y = 132;
+    labelSprite.position.z = 0;
+    labelSprite.scale.set(84, 24, 1);
+    labelSprite.renderOrder = 20;
     group.add(sphereGroup, labelSprite);
     group.userData.fadeMaterials = [labelSprite.material, coreMaterial, haloMaterial, orbitParticles.material];
     group.userData.sphereGroup = sphereGroup;
@@ -754,6 +755,7 @@ Promise.all([
       map: textTexture,
       transparent: true,
       opacity: 0,
+      depthTest: false,
       depthWrite: false
     }));
   }
@@ -860,7 +862,7 @@ Promise.all([
       updatePowerSphereIdle(item.marker, themedMarkerOpacity, delta);
 
       item.marker.userData.fadeMaterials.forEach((material, index) => {
-        const base = index === 1 ? 0.18 : index === 2 ? 0.07 : index === 3 ? 0.36 : 0.46;
+        const base = index === 0 ? 0.82 : index === 1 ? 0.18 : index === 2 ? 0.07 : 0.36;
         const modeFactor = index === 3 ? activeTheme.marker.orbitFactor ?? 1 : 1;
         material.opacity = themedMarkerOpacity * base * modeFactor;
       });

@@ -3,10 +3,10 @@
   --muted: rgba(10, 42, 90, 0.68);
   --glass: rgba(230, 242, 255, 0.72);
   --glass-strong: rgba(230, 242, 255, 0.9);
-  --stage-bg: #f0f6ff;
+  --stage-bg: #f6fbff;
   --stage-overlay:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(58, 123, 213, 0.05) 48%, rgba(15, 70, 140, 0.08)),
-    radial-gradient(circle at 42% 27%, rgba(255, 243, 214, 0.25), transparent 8%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(191, 229, 255, 0.04) 48%, rgba(15, 92, 170, 0.06)),
+    radial-gradient(circle at 42% 27%, rgba(255, 255, 255, 0.3), transparent 8%);
   --panel-border: rgba(58, 123, 213, 0.24);
   --nav-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(230, 242, 255, 0.58));
   --panel-shadow: 0 18px 45px rgba(12, 57, 116, 0.22);
