@@ -246,7 +246,7 @@
   </script>
   <script type="module">
     import * as THREE from 'three';
-    import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
     const canvas = document.getElementById('ride-canvas');
     const speedReadout = document.getElementById('speed-readout');
@@ -254,7 +254,7 @@
     const terrainReadout = document.getElementById('terrain-readout');
     const turnReadout = document.getElementById('turn-readout');
     const loadingStatus = document.getElementById('loading-status');
-    const embeddedHorseObjElement = document.getElementById('embedded-horse-obj');
+    const embeddedHorseGlbElement = document.getElementById('embedded-horse-glb');
 
     const debugState = {
       horseLoaded: false,
@@ -314,6 +314,7 @@
 
     const controls = new Map();
     const clock = new THREE.Clock();
+    let horseMixer = null;
     const horsePivot = new THREE.Group();
     const horseModel = new THREE.Group();
     const reins = new THREE.Group();
@@ -323,7 +324,6 @@
 
     buildTerrain();
     buildRocksAndGrass();
-    buildReins();
     loadHorse();
     bindControls();
     window.addEventListener('resize', handleResize);
@@ -457,21 +457,16 @@
     }
 
     function loadHorse() {
-      const material = new THREE.MeshStandardMaterial({
-        color: 0x7b7b76,
-        roughness: 0.82,
-        metalness: 0,
-        flatShading: false
-      });
-
-      const loader = new OBJLoader();
-      const finishLoadedHorse = (object) => {
+      const loader = new GLTFLoader();
+      const finishLoadedHorse = (gltf) => {
+        const object = gltf.scene;
         object.traverse((child) => {
           if (child.isMesh) {
-            child.material = material;
             child.castShadow = true;
             child.receiveShadow = true;
-            child.geometry.computeVertexNormals();
+            if (child.material) {
+              child.material.roughness = Math.min(child.material.roughness ?? 0.9, 0.95);
+            }
           }
         });
 
@@ -482,45 +477,44 @@
         box.getSize(size);
         object.position.sub(center);
 
-        const targetLength = 3.7;
-        const scale = targetLength / Math.max(size.y, 1);
+        const targetLength = 5.2;
+        const scale = targetLength / Math.max(size.x, size.y, size.z, 1);
         object.scale.setScalar(scale);
-        object.rotation.set(-Math.PI / 2 - 0.45, 0, 0);
+        object.rotation.set(0, Math.PI, 0);
         object.position.z -= 0.2;
-        object.position.y -= 0.62;
+        object.position.y -= 0.72;
 
         const forwardGroup = new THREE.Group();
-        forwardGroup.rotation.y = Math.PI;
+        forwardGroup.rotation.y = Math.PI / 2;
         forwardGroup.add(object);
         horseModel.add(forwardGroup);
-        debugState.horseLoaded = true;
-        hideLoading('Horse model ready');
-      };
 
-      if (embeddedHorseObjElement?.textContent.trim()) {
-        try {
-          finishLoadedHorse(loader.parse(JSON.parse(embeddedHorseObjElement.textContent)));
-        } catch (error) {
-          loadingStatus.textContent = 'Embedded OBJ could not be parsed.';
-          loadingStatus.classList.remove('is-hidden');
-          console.error('Embedded horse OBJ failed to parse:', error);
+        if (gltf.animations.length) {
+          horseMixer = new THREE.AnimationMixer(object);
+          gltf.animations.forEach((clip) => {
+            horseMixer.clipAction(clip).play();
+          });
         }
-        return;
+
+        debugState.horseLoaded = true;
+        hideLoading('Rigged horse ready');
       }
 
+      const riggedHorseUrl = embeddedHorseGlbElement?.textContent.trim() || 'assets/horse/animated_rigged_horse_with_saddle.glb';
+
       loader.load(
-        'assets/horse/11065_horsehead_v3.obj',
+        riggedHorseUrl,
         finishLoadedHorse,
         (xhr) => {
           if (xhr.total) {
             const loaded = Math.round((xhr.loaded / xhr.total) * 100);
-            loadingStatus.textContent = `Loading horse model ${loaded}%`;
+            loadingStatus.textContent = `Loading rigged horse ${loaded}%`;
           }
         },
         (error) => {
-          loadingStatus.textContent = getObjLoadErrorMessage();
+          loadingStatus.textContent = getHorseLoadErrorMessage();
           loadingStatus.classList.remove('is-hidden');
-          console.error('Horse OBJ failed to load:', error);
+          console.error('Rigged horse GLB failed to load:', error);
           debugState.horseLoaded = false;
         }
       );
@@ -564,6 +558,10 @@
       requestAnimationFrame(animate);
       const dt = Math.min(clock.getDelta(), 0.05);
       updateRide(dt);
+      if (horseMixer) {
+        const animationRate = 0.35 + THREE.MathUtils.clamp(Math.abs(rider.speed) / maxSpeed, 0, 1) * 1.35;
+        horseMixer.update(dt * animationRate);
+      }
       renderer.render(scene, camera);
     }
 
@@ -636,7 +634,7 @@
       camera.rotation.y = rider.steer * 0.035;
       camera.rotation.z = -rider.steer * 0.075 - roll;
 
-      horsePivot.position.set(0, -2.05 + Math.sin(rider.phase * 2.05) * speed01 * 0.045, -6.2 - speed01 * 0.32);
+      horsePivot.position.set(0, -2.35 + Math.sin(rider.phase * 2.05) * speed01 * 0.045, -3.65 - speed01 * 0.32);
       horsePivot.rotation.order = 'YXZ';
       horsePivot.rotation.y = -rider.steer * 0.52 + Math.sin(rider.phase * 0.42) * speed01 * 0.025;
       horsePivot.rotation.x = 0.08 + Math.sin(rider.phase * 1.86) * (0.035 + speed01 * 0.075);
@@ -749,12 +747,12 @@
       }, 650);
     }
 
-    function getObjLoadErrorMessage() {
+    function getHorseLoadErrorMessage() {
       if (window.location.protocol === 'file:') {
-        return 'Browser blocked the OBJ because this page was opened as file://. Use http://localhost:8066/horse-ride.html';
+        return 'Browser blocked the GLB because this page was opened as file://. Use http://localhost:8066/horse-ride.html';
       }
 
-      return 'OBJ failed to load. Check assets/horse/11065_horsehead_v3.obj and serve the page over http://localhost.';
+      return 'Rigged horse failed to load. Check assets/horse/animated_rigged_horse_with_saddle.glb and serve the page over http://localhost.';
     }
 
     function handleResize() {

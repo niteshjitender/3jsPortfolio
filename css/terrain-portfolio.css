@@ -407,8 +407,11 @@ a {
   align-items: center;
   min-height: 38px;
   padding: 0 14px;
+  border: 0;
   border-radius: 999px;
+  background: transparent;
   color: var(--ink);
+  cursor: pointer;
   font-size: 0.78rem;
   font-weight: 900;
   text-decoration: none;
@@ -419,6 +422,12 @@ a {
 .hud-link:hover {
   background: rgba(34, 211, 238, 0.13);
   color: var(--link-accent);
+}
+
+.hud-button.is-active {
+  background: linear-gradient(135deg, var(--accent), var(--link-accent));
+  box-shadow: 0 0 18px var(--toggle-glow);
+  color: #ffffff;
 }
 
 .quick-profile-button {

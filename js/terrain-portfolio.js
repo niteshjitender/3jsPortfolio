@@ -1,7 +1,8 @@
 Promise.all([
   import('https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js'),
-  import('https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/math/ImprovedNoise.js')
-]).then(([THREE, { ImprovedNoise }]) => {
+  import('https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/math/ImprovedNoise.js'),
+  import('https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/loaders/GLTFLoader.js')
+]).then(([THREE, { ImprovedNoise }, { GLTFLoader }]) => {
   const appViews = Array.from(document.querySelectorAll('.app-view'));
   const landingView = document.querySelector('#landing-view');
   const journeyView = document.querySelector('#journey-view');
@@ -17,6 +18,8 @@ Promise.all([
   const content = window.PORTFOLIO_CONTENT || {};
   const themeStylesheet = document.querySelector('#theme-stylesheet');
   const themeToggle = document.querySelector('#theme-toggle');
+  const freeRoamToggle = document.querySelector('#free-roam-toggle');
+  const resetJourneyButton = document.querySelector('#reset-journey');
   const modeHelper = document.querySelector('#mode-helper');
   const journeyStepCount = document.querySelector('#journey-step-count');
   const journeyCurrentLabel = document.querySelector('#journey-current-label');
@@ -34,6 +37,7 @@ Promise.all([
   const sideSpeed = 260;
   const cameraHeight = 105;
   const lookAhead = 0.026;
+  const journeyStartProgress = Math.max(0.03, (journeyMarkers[0]?.progress ?? 0.18) - 0.105);
 
   let camera;
   let scene;
@@ -42,9 +46,30 @@ Promise.all([
   let texture;
   let path;
   let trailSamples = [];
-  let pathProgress = journeyMarkers[0]?.progress ?? 0.18;
+  let pathProgress = journeyStartProgress;
   let sideOffset = 0;
+  let freeRoamEnabled = false;
+  let freeYaw = 0;
+  const freePosition = new THREE.Vector3();
   let data;
+  let horsePivot;
+  let horseModel;
+  let horseMixer = null;
+  let horseWalkingAudio = null;
+  let horseAudioPlayPending = false;
+  let horseAudioBlocked = false;
+  let horseAudioWanted = false;
+  const horseSteeringRig = {
+    body: [],
+    neck: [],
+    head: [],
+    baseQuaternions: new Map()
+  };
+  const rideMotion = {
+    speed: 0,
+    steer: 0,
+    phase: 0
+  };
   let currentView = 'landing';
   let currentMarkerIndex = 0;
   let rendererReady = false;
@@ -57,11 +82,63 @@ Promise.all([
 
   initThemeControls();
   initViewRouting();
+  initJourneyControls();
   initJourneyProgress();
   initMobileJourneyFallback();
   init();
   renderRoute();
 
+  // Debug hook (optional). Used by js/debug-theme-panel.js if included.
+  // Safe to ignore/remove; no functional dependency.
+  window.__PORTFOLIO_RUNTIME__ = {
+    get themes() {
+      return themes;
+    },
+    get activeThemeName() {
+      return activeThemeName;
+    },
+    get activeTheme() {
+      return activeTheme;
+    },
+    get horse() {
+      return {
+        loaded: Boolean(horseModel?.children.length),
+        bodyBones: horseSteeringRig.body.length,
+        neckBones: horseSteeringRig.neck.length,
+        headBones: horseSteeringRig.head.length,
+        speed: rideMotion.speed,
+        steer: rideMotion.steer,
+        audioReady: Boolean(horseWalkingAudio),
+        audioPlaying: Boolean(horseWalkingAudio && !horseWalkingAudio.paused),
+        audioLoop: Boolean(horseWalkingAudio?.loop),
+        audioPlaybackRate: horseWalkingAudio?.playbackRate || 0,
+        freeRoamEnabled
+      };
+    },
+    refresh() {
+      applyThemeDocument();
+      applyThemeToScene();
+    },
+    setThemeValue(themeName, path, value) {
+      if (!themes?.[themeName]) return;
+      const parts = String(path).split('.').filter(Boolean);
+      if (!parts.length) return;
+      let target = themes[themeName];
+      for (let i = 0; i < parts.length - 1; i += 1) {
+        if (!target || typeof target !== 'object') return;
+        target = target[parts[i]];
+      }
+      const key = parts[parts.length - 1];
+      if (!target || typeof target !== 'object') return;
+      target[key] = value;
+
+      if (themeName === activeThemeName) {
+        activeTheme = themes[activeThemeName];
+        applyThemeToScene();
+      }
+    }
+  };
+  window.dispatchEvent(new Event('portfolio-runtime-ready'));
   function initThemeControls() {
     applyThemeDocument();
 
@@ -82,6 +159,22 @@ Promise.all([
         if (targetRoute) window.location.hash = targetRoute;
       });
     });
+  }
+
+  function initJourneyControls() {
+    if (freeRoamToggle) {
+      freeRoamToggle.addEventListener('click', () => {
+        setFreeRoamEnabled(!freeRoamEnabled);
+      });
+    }
+
+    if (resetJourneyButton) {
+      resetJourneyButton.addEventListener('click', () => {
+        resetJourneyState();
+      });
+    }
+
+    updateFreeRoamToggle();
   }
 
   function switchTheme(themeName) {
@@ -128,6 +221,7 @@ Promise.all([
   }
 
   function moveToPathProgress(progress) {
+    setFreeRoamEnabled(false, { preserveCamera: true });
     pathProgress = THREE.MathUtils.clamp(progress, 0, 1);
     sideOffset = 0;
     hideSectionCard();
@@ -190,7 +284,7 @@ Promise.all([
     if (viewName === 'journey') {
       journeyView.hidden = false;
       if (previousView !== 'journey') {
-        resetJourneyMarkers();
+        resetJourneyState();
       }
       return;
     }
@@ -207,6 +301,64 @@ Promise.all([
     sectionMarkers.forEach((item) => resetSectionMarker(item));
     hideSectionCard();
     updateJourneyProgress();
+  }
+
+  function resetJourneyState() {
+    setFreeRoamEnabled(false, { preserveCamera: true });
+    keys.clear();
+    rideMotion.speed = 0;
+    rideMotion.steer = 0;
+    sideOffset = 0;
+    pathProgress = journeyStartProgress;
+    resetJourneyMarkers();
+    pauseHorseWalkingAudio();
+
+    if (path) {
+      updateCameraAlongPath(0);
+      updateHorseRideMotion(0);
+    }
+  }
+
+  function setFreeRoamEnabled(enabled, options = {}) {
+    if (freeRoamEnabled === enabled) {
+      updateFreeRoamToggle();
+      return;
+    }
+
+    freeRoamEnabled = enabled;
+    document.body.dataset.freeRoam = enabled ? 'true' : 'false';
+
+    if (enabled) {
+      enterFreeRoamFromPath();
+    } else if (!options.preserveCamera && path && freePosition.lengthSq() > 0) {
+      pathProgress = getNearestTrailProgress(freePosition.x, freePosition.z);
+      sideOffset = 0;
+      updateCameraAlongPath(0);
+    }
+
+    updateFreeRoamToggle();
+  }
+
+  function enterFreeRoamFromPath() {
+    if (!path) return;
+
+    const point = path.getPointAt(pathProgress);
+    const tangent = path.getTangentAt(pathProgress).normalize();
+    const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    freePosition.copy(point).addScaledVector(side, sideOffset);
+    freePosition.y = getTerrainHeight(freePosition.x, freePosition.z) + cameraHeight;
+    freeYaw = Math.atan2(-tangent.x, -tangent.z);
+    sideOffset = 0;
+  }
+
+  function updateFreeRoamToggle() {
+    if (!freeRoamToggle) return;
+
+    freeRoamToggle.textContent = freeRoamEnabled ? 'Trail Mode' : 'Free Roam';
+    freeRoamToggle.setAttribute('aria-pressed', String(freeRoamEnabled));
+    freeRoamToggle.classList.toggle('is-active', freeRoamEnabled);
+    freeRoamToggle.title = freeRoamEnabled ? 'Return to guided trail movement' : 'Explore anywhere on the terrain';
   }
 
   function scrollToProfileAnchor(anchor) {
@@ -231,6 +383,7 @@ Promise.all([
   function stopJourneyLoop() {
     keys.clear();
     hideSectionCard();
+    pauseHorseWalkingAudio();
 
     if (renderer) {
       renderer.setAnimationLoop(null);
@@ -283,8 +436,10 @@ Promise.all([
 
   function init() {
     camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 1, 10000);
+    createHorseRiderRig();
 
     scene = new THREE.Scene();
+    scene.add(camera);
     scene.background = new THREE.Color(activeTheme.sceneBg);
     scene.fog = new THREE.FogExp2(activeTheme.fog, activeTheme.fogDensity ?? 0.0016);
 
@@ -331,11 +486,20 @@ Promise.all([
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
       event.preventDefault();
       keys.add(key);
+      horseAudioBlocked = false;
+
+      if (['w', 's', 'arrowup', 'arrowdown'].includes(key)) {
+        startHorseWalkingAudio();
+      }
     }
   }
 
   function onKeyUp(event) {
     keys.delete(event.key.toLowerCase());
+
+    if (!keys.has('w') && !keys.has('s') && !keys.has('arrowup') && !keys.has('arrowdown')) {
+      pauseHorseWalkingAudio();
+    }
   }
 
   function createCurvyTerrainPath() {
@@ -355,10 +519,30 @@ Promise.all([
     for (let index = 0; index < sampleCount; index += 1) {
       const progress = index / (sampleCount - 1);
       const point = path.getPointAt(progress);
-      samples.push({ x: point.x, z: point.z });
+      samples.push({ x: point.x, z: point.z, progress });
     }
 
     return samples;
+  }
+
+  function getNearestTrailProgress(worldX, worldZ) {
+    if (!trailSamples.length) return pathProgress;
+
+    let nearest = trailSamples[0];
+    let nearestDistanceSquared = Infinity;
+
+    trailSamples.forEach((sample) => {
+      const distanceX = worldX - sample.x;
+      const distanceZ = worldZ - sample.z;
+      const distanceSquared = distanceX * distanceX + distanceZ * distanceZ;
+
+      if (distanceSquared < nearestDistanceSquared) {
+        nearestDistanceSquared = distanceSquared;
+        nearest = sample;
+      }
+    });
+
+    return nearest.progress;
   }
 
   function buildValleyPath() {
@@ -451,17 +635,48 @@ Promise.all([
     const backward = keys.has('s') || keys.has('arrowdown');
     const left = keys.has('a') || keys.has('arrowleft');
     const right = keys.has('d') || keys.has('arrowright');
+    const speedTarget = forward ? 1 : backward ? -0.62 : 0;
+    const steerTarget = (left ? 1 : 0) - (right ? 1 : 0);
+    const speedSmoothing = speedTarget === 0 ? 1.8 : 5.8;
 
-    if (forward) pathProgress += pathSpeed * delta;
-    if (backward) pathProgress -= pathSpeed * delta;
-    if (left) sideOffset -= sideSpeed * delta;
-    if (right) sideOffset += sideSpeed * delta;
+    rideMotion.speed = damp(rideMotion.speed, speedTarget, speedSmoothing, delta);
+    rideMotion.steer = damp(rideMotion.steer, steerTarget, 8.5, delta);
+    rideMotion.phase += (2.4 + Math.abs(rideMotion.speed) * 8.8) * delta;
+
+    if (freeRoamEnabled) {
+      updateFreeRoamMovement(delta);
+      updateHorseRideMotion(delta);
+      return;
+    }
+
+    pathProgress += pathSpeed * rideMotion.speed * delta;
+    sideOffset -= rideMotion.steer * sideSpeed * delta;
 
     pathProgress = THREE.MathUtils.clamp(pathProgress, 0, 1);
     sideOffset = THREE.MathUtils.clamp(sideOffset, -160, 160);
-    sideOffset *= 1 - delta * 1.4;
+    if (!left && !right) {
+      sideOffset *= 1 - delta * 1.35;
+    }
 
     updateCameraAlongPath(delta);
+    updateHorseRideMotion(delta);
+  }
+
+  function updateFreeRoamMovement(delta) {
+    const speed01 = THREE.MathUtils.clamp(Math.abs(rideMotion.speed), 0, 1);
+    const turnSpeed = 1.15 + speed01 * 0.55;
+    const freeMoveSpeed = 780;
+    const speedDirection = rideMotion.speed >= -0.04 ? 1 : -0.72;
+
+    freeYaw += rideMotion.steer * turnSpeed * speedDirection * delta;
+
+    const forwardVector = new THREE.Vector3(-Math.sin(freeYaw), 0, -Math.cos(freeYaw));
+    freePosition.addScaledVector(forwardVector, freeMoveSpeed * rideMotion.speed * delta);
+    freePosition.x = THREE.MathUtils.clamp(freePosition.x, -terrainHalf + 90, terrainHalf - 90);
+    freePosition.z = THREE.MathUtils.clamp(freePosition.z, -terrainHalf + 90, terrainHalf - 90);
+    pathProgress = getNearestTrailProgress(freePosition.x, freePosition.z);
+
+    updateCameraFreeRoam(delta);
   }
 
   function updateCameraAlongPath(delta) {
@@ -469,11 +684,20 @@ Promise.all([
     const tangent = path.getTangentAt(pathProgress).normalize();
     const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
     const cameraPoint = point.clone().addScaledVector(side, sideOffset);
+    const speed01 = THREE.MathUtils.clamp(Math.abs(rideMotion.speed), 0, 1);
+    const gaitBob = Math.sin(rideMotion.phase * 2.05) * speed01 * 7.2;
+    const canterLift = Math.sin(rideMotion.phase * 4.1) * speed01 * 1.8;
+    const saddleSway = Math.sin(rideMotion.phase * 0.92) * speed01 * 5.2;
+
+    cameraPoint.addScaledVector(side, saddleSway);
     cameraPoint.y = getTerrainHeight(cameraPoint.x, cameraPoint.z) + cameraHeight;
+    cameraPoint.y += gaitBob + canterLift;
 
     const nextProgress = THREE.MathUtils.clamp(pathProgress + lookAhead, 0, 1);
     const lookPoint = path.getPointAt(nextProgress);
+    lookPoint.addScaledVector(side, sideOffset * 0.16 - rideMotion.steer * 64);
     lookPoint.y = getTerrainHeight(lookPoint.x, lookPoint.z) + cameraHeight * 0.72;
+    lookPoint.y += Math.sin(rideMotion.phase * 1.2) * speed01 * 3.4;
 
     if (delta === 0) {
       camera.position.copy(cameraPoint);
@@ -482,6 +706,62 @@ Promise.all([
     }
 
     camera.lookAt(lookPoint);
+    camera.rotateZ(-rideMotion.steer * 0.055 + Math.sin(rideMotion.phase) * speed01 * 0.014);
+  }
+
+  function updateCameraFreeRoam(delta) {
+    const speed01 = THREE.MathUtils.clamp(Math.abs(rideMotion.speed), 0, 1);
+    const forwardVector = new THREE.Vector3(-Math.sin(freeYaw), 0, -Math.cos(freeYaw));
+    const side = new THREE.Vector3(-forwardVector.z, 0, forwardVector.x).normalize();
+    const gaitBob = Math.sin(rideMotion.phase * 2.05) * speed01 * 7.2;
+    const canterLift = Math.sin(rideMotion.phase * 4.1) * speed01 * 1.8;
+    const saddleSway = Math.sin(rideMotion.phase * 0.92) * speed01 * 5.2;
+    const cameraPoint = freePosition.clone().addScaledVector(side, saddleSway);
+
+    cameraPoint.y = getTerrainHeight(cameraPoint.x, cameraPoint.z) + cameraHeight + gaitBob + canterLift;
+    freePosition.y = cameraPoint.y;
+
+    const lookPoint = freePosition.clone()
+      .addScaledVector(forwardVector, 760)
+      .addScaledVector(side, -rideMotion.steer * 72);
+    lookPoint.y = getTerrainHeight(lookPoint.x, lookPoint.z) + cameraHeight * 0.72;
+    lookPoint.y += Math.sin(rideMotion.phase * 1.2) * speed01 * 3.4;
+
+    if (delta === 0) {
+      camera.position.copy(cameraPoint);
+    } else {
+      camera.position.lerp(cameraPoint, 1 - Math.pow(0.001, delta));
+    }
+
+    camera.lookAt(lookPoint);
+    camera.rotateZ(-rideMotion.steer * 0.06 + Math.sin(rideMotion.phase) * speed01 * 0.014);
+  }
+
+  function updateHorseRideMotion(delta) {
+    if (!horsePivot) return;
+
+    const speed01 = THREE.MathUtils.clamp(Math.abs(rideMotion.speed), 0, 1);
+    const walkBounce = Math.sin(rideMotion.phase * 2.05) * speed01;
+    const hasStrideInput = keys.has('w') || keys.has('s') || keys.has('arrowup') || keys.has('arrowdown');
+    const isWalking = currentView === 'journey' && hasStrideInput && speed01 > 0.055;
+
+    if (horseMixer && isWalking) {
+      const animationRate = 0.24 + speed01 * 1.42;
+      horseMixer.update(delta * animationRate);
+    }
+
+    horsePivot.position.set(
+      Math.sin(rideMotion.phase * 0.5) * speed01 * 1.8,
+      -132 + walkBounce * 1.8,
+      -176 - speed01 * 8
+    );
+    horsePivot.rotation.order = 'YXZ';
+    horsePivot.rotation.y = -rideMotion.steer * 0.34 + Math.sin(rideMotion.phase * 0.42) * speed01 * 0.018;
+    horsePivot.rotation.x = 0.04 + Math.sin(rideMotion.phase * 1.86) * (0.018 + speed01 * 0.045);
+    horsePivot.rotation.z = -rideMotion.steer * 0.085 + Math.sin(rideMotion.phase) * speed01 * 0.012;
+
+    applyHorseSteeringPose(speed01);
+    syncHorseWalkingAudio(isWalking, speed01);
   }
 
   function createSectionMarkers() {
@@ -516,6 +796,202 @@ Promise.all([
         cardContentShown: false
       });
     });
+  }
+
+  function createHorseRiderRig() {
+    horsePivot = new THREE.Group();
+    horseModel = new THREE.Group();
+
+    horsePivot.name = 'first-person-horse-rig';
+    horseModel.name = 'first-person-horse-glb';
+    horsePivot.rotation.order = 'YXZ';
+    camera.add(horsePivot);
+    horsePivot.add(horseModel);
+    loadHorseModel();
+  }
+
+  function loadHorseModel() {
+    const loader = new GLTFLoader();
+
+    loader.load(
+      'assets/horse/animated_rigged_horse_with_saddle.glb',
+      (gltf) => {
+        const object = gltf.scene;
+        const silhouetteMaterial = new THREE.MeshBasicMaterial({
+          color: 0x020509,
+          side: THREE.DoubleSide,
+          depthTest: false,
+          depthWrite: false
+        });
+        const tackMaterial = new THREE.MeshBasicMaterial({
+          color: 0x101927,
+          side: THREE.DoubleSide,
+          depthTest: false,
+          depthWrite: false
+        });
+        const tackMaterialNames = new Set(['Material', 'Material.008', 'Material.001']);
+
+        object.traverse((child) => {
+          if (!child.isMesh) return;
+          const originalMaterials = Array.isArray(child.material) ? child.material : [child.material];
+          const isTackMesh = originalMaterials.some((material) => tackMaterialNames.has(material?.name));
+
+          child.frustumCulled = false;
+          child.castShadow = false;
+          child.receiveShadow = false;
+          child.renderOrder = isTackMesh ? 43 : 42;
+          child.material = isTackMesh ? tackMaterial : silhouetteMaterial;
+          child.geometry?.computeVertexNormals?.();
+        });
+
+        const box = new THREE.Box3().setFromObject(object);
+        const center = new THREE.Vector3();
+        const size = new THREE.Vector3();
+        box.getCenter(center);
+        box.getSize(size);
+        object.position.sub(center);
+
+        const targetLength = 148;
+        const scale = targetLength / Math.max(size.x, size.y, size.z, 1);
+        object.scale.setScalar(scale);
+        object.rotation.set(0, Math.PI, 0);
+        object.position.set(0, -12, -8);
+
+        const forwardGroup = new THREE.Group();
+        forwardGroup.rotation.y = Math.PI / 2;
+        forwardGroup.add(object);
+
+        horseModel.clear();
+        horseModel.add(forwardGroup);
+
+        if (gltf.animations?.length) {
+          horseMixer = new THREE.AnimationMixer(object);
+          gltf.animations.forEach((clip) => {
+            horseMixer.clipAction(clip).play();
+          });
+        }
+
+        setupHorseSteeringRig(object);
+      },
+      undefined,
+      (error) => {
+        console.error('Horse GLB failed to load:', error);
+      }
+    );
+  }
+
+  function setupHorseSteeringRig(object) {
+    horseSteeringRig.body = ['spine.008_50', 'spine.009_48']
+      .map((name) => object.getObjectByName(name))
+      .filter(Boolean);
+    horseSteeringRig.neck = ['spine.010_34', 'spine.011_31', 'spine.012_28', 'spine.014_25', 'spine.015_22']
+      .map((name) => object.getObjectByName(name))
+      .filter(Boolean);
+    horseSteeringRig.head = ['spine.016_17', 'skull_6']
+      .map((name) => object.getObjectByName(name))
+      .filter(Boolean);
+    horseSteeringRig.baseQuaternions.clear();
+
+    [...horseSteeringRig.body, ...horseSteeringRig.neck, ...horseSteeringRig.head].forEach((bone) => {
+      horseSteeringRig.baseQuaternions.set(bone, bone.quaternion.clone());
+    });
+  }
+
+  function applyHorseSteeringPose(speed01) {
+    const steer = rideMotion.steer;
+    const walkNod = Math.sin(rideMotion.phase * 1.72) * speed01;
+    const steerIntensity = THREE.MathUtils.clamp(Math.abs(steer), 0, 1);
+
+    horseSteeringRig.body.forEach((bone, index) => {
+      setHorseBonePose(
+        bone,
+        walkNod * 0.012,
+        -steer * (0.018 + index * 0.018),
+        -steer * (0.038 + index * 0.024)
+      );
+    });
+
+    horseSteeringRig.neck.forEach((bone, index) => {
+      const progress = (index + 1) / horseSteeringRig.neck.length;
+      setHorseBonePose(
+        bone,
+        0.025 + walkNod * 0.018 * progress,
+        -steer * (0.018 + progress * 0.03),
+        -steer * (0.055 + progress * 0.11)
+      );
+    });
+
+    horseSteeringRig.head.forEach((bone, index) => {
+      setHorseBonePose(
+        bone,
+        walkNod * 0.024,
+        -steer * (0.045 + index * 0.02),
+        -steer * (0.16 + index * 0.055) - steer * steerIntensity * 0.035
+      );
+    });
+  }
+
+  function setHorseBonePose(bone, pitch, twist, turn) {
+    const baseQuaternion = horseSteeringRig.baseQuaternions.get(bone);
+    if (!baseQuaternion) return;
+
+    const turnQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, twist, turn, 'XYZ'));
+    bone.quaternion.copy(baseQuaternion).multiply(turnQuaternion);
+  }
+
+  function initHorseWalkingAudio() {
+    if (horseWalkingAudio) return;
+
+    horseWalkingAudio = new Audio('assets/horse/HorseWalking.mp3');
+    horseWalkingAudio.loop = true;
+    horseWalkingAudio.preload = 'auto';
+    horseWalkingAudio.volume = 0.38;
+    horseWalkingAudio.addEventListener('ended', () => {
+      horseWalkingAudio.currentTime = 0;
+      if (!horseWalkingAudio.paused) return;
+      startHorseWalkingAudio();
+    });
+  }
+
+  function startHorseWalkingAudio() {
+    initHorseWalkingAudio();
+    horseAudioWanted = true;
+
+    if (!horseWalkingAudio || horseAudioPlayPending || horseAudioBlocked || currentView !== 'journey') return;
+    if (!horseWalkingAudio.paused) return;
+
+    horseAudioPlayPending = true;
+    horseWalkingAudio.play()
+      .then(() => {
+        horseAudioBlocked = false;
+        if (!horseAudioWanted) {
+          pauseHorseWalkingAudio();
+        }
+      })
+      .catch(() => {
+        horseAudioBlocked = true;
+      })
+      .finally(() => {
+        horseAudioPlayPending = false;
+      });
+  }
+
+  function pauseHorseWalkingAudio() {
+    horseAudioWanted = false;
+    if (!horseWalkingAudio) return;
+
+    horseWalkingAudio.pause();
+  }
+
+  function syncHorseWalkingAudio(isWalking, speed01) {
+    if (isWalking) {
+      initHorseWalkingAudio();
+      horseWalkingAudio.playbackRate = THREE.MathUtils.lerp(0.82, 1.12, speed01);
+      startHorseWalkingAudio();
+      return;
+    }
+
+    pauseHorseWalkingAudio();
   }
 
   function createLocationMarker(label) {
@@ -1174,6 +1650,10 @@ Promise.all([
     return THREE.MathUtils.clamp(Math.round(value), 0, 255);
   }
 
+  function damp(value, target, smoothing, delta) {
+    return THREE.MathUtils.lerp(value, target, 1 - Math.exp(-smoothing * delta));
+  }
+
   function generateTexture(heightData, width, height) {
     let context;
     let image;
@@ -1214,9 +1694,10 @@ Promise.all([
       const worldZ = terrainZ / (height - 1) * terrainSize - terrainHalf;
       const trailBlend = getTrailBlend(worldX, worldZ);
       const baseColor = getTerrainPaletteColor(heightData[j]);
-      const shadow = THREE.MathUtils.clamp(shade, 0.18, 1);
-      const light = 0.48 + shadow * 0.62;
-      const haze = THREE.MathUtils.smoothstep(heightData[j] / 255, 0.42, 0.88) * 12;
+      const shadowFloor = activeThemeName === 'night' ? 0.27 : 0.42;
+      const shadow = THREE.MathUtils.clamp(shade, shadowFloor, 1);
+      const light = activeThemeName === 'night' ? 0.44 + shadow * 0.58 : 0.66 + shadow * 0.46;
+      const haze = THREE.MathUtils.smoothstep(heightData[j] / 255, 0.42, 0.88) * (activeThemeName === 'night' ? 5 : 11);
       let litColor = [
         baseColor[0] * light + haze,
         baseColor[1] * light + haze,
