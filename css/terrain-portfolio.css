@@ -135,6 +135,10 @@ a {
   text-decoration: none;
 }
 
+.brand-accent {
+  color: var(--link-accent);
+}
+
 .landing-links,
 .landing-secondary-links,
 .profile-links {
@@ -915,6 +919,16 @@ body[data-theme="night"] .theme-toggle::after {
   letter-spacing: 0.07em;
   text-decoration: none;
   text-transform: uppercase;
+}
+
+.section-card a.journey-link {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 800;
+}
+
+.section-card a.journey-link:hover {
+  text-decoration: underline;
 }
 
 .profile-page {

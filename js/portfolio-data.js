@@ -114,9 +114,9 @@ window.PORTFOLIO_CONTENT = {
       heading: 'Contact',
       description: 'Open to senior backend engineering roles in large-scale infrastructure, distributed systems, and AI-driven platforms.',
       bullets: [
-        'Email: niteshjitender@gmail.com',
-        'LinkedIn: linkedin.com/in/jitender-singh-chhapola',
-        'Website: jitendersinghchhapola.com'
+        'Email: <a href="mailto:niteshjitender@gmail.com" class="journey-link">niteshjitender@gmail.com</a>',
+        'LinkedIn: <a href="https://linkedin.com/in/jitender-singh-chhapola" target="_blank" class="journey-link">linkedin.com/in/jitender-singh-chhapola</a>',
+        'Website: <a href="https://jitendersinghchhapola.com" target="_blank" class="journey-link">jitendersinghchhapola.com</a>'
       ],
       sectionType: 'contact',
       fullProfileAnchor: 'profile-contact',
