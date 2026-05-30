@@ -1419,11 +1419,12 @@ a {
 .highlights-rotator-wrapper {
   display: inline-flex;
   overflow: hidden;
-  height: 1.5em;
+  height: 42px;
   background: var(--glass-strong);
-  padding: 0 16px;
+  padding: 0 18px;
   border-radius: 999px;
   border: 1px solid var(--panel-border);
+  box-sizing: border-box;
 }
 
 .highlights-rotator {
@@ -1435,7 +1436,8 @@ a {
 .highlights-rotator span {
   display: flex;
   align-items: center;
-  height: 1.5em;
+  height: 40px;
+  line-height: 40px;
   color: var(--link-accent);
   font-weight: 800;
   white-space: nowrap;
@@ -1443,11 +1445,11 @@ a {
 
 @keyframes rotateHighlights {
   0%, 15% { transform: translateY(0); }
-  20%, 35% { transform: translateY(-1.5em); }
-  40%, 55% { transform: translateY(-3.0em); }
-  60%, 75% { transform: translateY(-4.5em); }
-  80%, 95% { transform: translateY(-6.0em); }
-  100% { transform: translateY(-7.5em); }
+  20%, 35% { transform: translateY(-40px); }
+  40%, 55% { transform: translateY(-80px); }
+  60%, 75% { transform: translateY(-120px); }
+  80%, 95% { transform: translateY(-160px); }
+  100% { transform: translateY(-200px); }
 }
 
 .bento-actions {
@@ -1463,21 +1465,45 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 36px;
+  padding: 0 36px;
+  height: 54px;
   border-radius: 999px;
-  background: var(--ink);
+  background: transparent;
   color: var(--stage-bg);
   font-weight: 900;
   font-size: 1.1rem;
   text-decoration: none;
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  z-index: 1;
+  border: none;
+  z-index: 0;
+  transition: transform 0.2s ease;
 }
 
-.creative-journey-button:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+.creative-journey-button::before {
+  content: '';
+  background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  background-size: 400%;
+  z-index: -1;
+  filter: blur(5px);
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  animation: glowing 20s linear infinite;
+  opacity: 1;
+  border-radius: 999px;
+}
+
+.creative-journey-button::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: var(--ink);
+  left: 0;
+  top: 0;
+  border-radius: 999px;
+  z-index: -1;
 }
 
 .button-content {
@@ -1485,28 +1511,14 @@ a {
   z-index: 2;
 }
 
-.button-glow {
-  position: absolute;
-  inset: -4px;
-  background: linear-gradient(90deg, #ff007f, #7f00ff, #007fff, #00ff7f, #ff007f);
-  background-size: 200% auto;
-  z-index: 0;
-  filter: blur(10px);
-  animation: shineGlow 3s linear infinite;
-  opacity: 0.8;
+@keyframes glowing {
+  0% { background-position: 0 0; }
+  50% { background-position: 400% 0; }
+  100% { background-position: 0 0; }
 }
 
-.creative-journey-button::before {
-  content: "";
-  position: absolute;
-  inset: 2px;
-  background: var(--ink);
-  border-radius: 999px;
-  z-index: 1;
-}
-
-@keyframes shineGlow {
-  to { background-position: 200% center; }
+.creative-journey-button:hover {
+  transform: translateY(-2px) scale(1.02);
 }
 
 .bento-secondary-btn {

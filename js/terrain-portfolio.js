@@ -644,17 +644,39 @@ Promise.all([
     applyCelestialTheme();
   }
 
+  function createSunMaterial() {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      fog: false,
+      uniforms: {
+        baseColor: { value: new THREE.Color(0xffffff) },
+        opacity: { value: 1 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform vec3 baseColor;
+        uniform float opacity;
+        void main() {
+          vec2 p = vUv * 2.0 - 1.0;
+          if (dot(p, p) > 1.0) discard;
+          gl_FragColor = vec4(baseColor, opacity);
+        }
+      `
+    });
+  }
+
   function createCelestialBody(glowTexture, type) {
     const group = new THREE.Group();
-    const bodyMaterial = type === 'moon'
-      ? createMoonMaterial()
-      : new THREE.MeshBasicMaterial({
-        transparent: true,
-        opacity: 1,
-        depthWrite: false,
-        depthTest: true,
-        fog: false
-      });
+    const bodyMaterial = type === 'moon' ? createMoonMaterial() : createSunMaterial();
     const glowMaterial = new THREE.SpriteMaterial({
       map: glowTexture,
       transparent: true,
@@ -664,7 +686,7 @@ Promise.all([
       fog: false,
       blending: THREE.AdditiveBlending
     });
-    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), bodyMaterial);
+    const body = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bodyMaterial);
     const glow = new THREE.Sprite(glowMaterial);
 
     body.renderOrder = 3;
@@ -683,24 +705,23 @@ Promise.all([
       uniforms: {
         baseColor: { value: new THREE.Color(0xe1e1df) },
         opacity: { value: 1 },
-        time: { value: 0 }
+        time: { value: 0 },
+        spin: { value: 0 }
       },
       vertexShader: `
-        varying vec3 vNormal;
         varying vec2 vUv;
 
         void main() {
-          vNormal = normalize(normalMatrix * normal);
           vUv = uv;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
-        varying vec3 vNormal;
         varying vec2 vUv;
         uniform vec3 baseColor;
         uniform float opacity;
         uniform float time;
+        uniform float spin;
 
         float hash(vec2 p) {
           return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -718,17 +739,29 @@ Promise.all([
         }
 
         void main() {
+          vec2 p = vUv * 2.0 - 1.0;
+          float r2 = dot(p, p);
+          if (r2 > 1.0) discard;
+          
+          float z = sqrt(1.0 - r2);
+          float s = sin(spin);
+          float c = cos(spin);
+          vec2 rotatedP = vec2(p.x * c - p.y * s, p.x * s + p.y * c);
+          vec2 uvRotated = rotatedP * 0.5 + 0.5;
+          
+          vec3 vNormal = vec3(p.x, p.y, z);
+
           vec3 moonColor = baseColor;
-          float n = noise(vUv * 8.0 + time * 0.01) * 0.5;
-          n += noise(vUv * 20.0) * 0.25;
-          n += noise(vUv * 42.0) * 0.1;
+          float n = noise(uvRotated * 8.0 + time * 0.01) * 0.5;
+          n += noise(uvRotated * 20.0) * 0.25;
+          n += noise(uvRotated * 42.0) * 0.1;
           moonColor -= n * 0.12;
 
           float spots = 0.0;
-          spots += smoothstep(0.35, 0.0, length(vUv - vec2(0.30, 0.60))) * 0.25;
-          spots += smoothstep(0.20, 0.0, length(vUv - vec2(0.62, 0.42))) * 0.18;
-          spots += smoothstep(0.15, 0.0, length(vUv - vec2(0.50, 0.70))) * 0.12;
-          spots += smoothstep(0.10, 0.0, length(vUv - vec2(0.22, 0.32))) * 0.10;
+          spots += smoothstep(0.35, 0.0, length(uvRotated - vec2(0.30, 0.60))) * 0.25;
+          spots += smoothstep(0.20, 0.0, length(uvRotated - vec2(0.62, 0.42))) * 0.18;
+          spots += smoothstep(0.15, 0.0, length(uvRotated - vec2(0.50, 0.70))) * 0.12;
+          spots += smoothstep(0.10, 0.0, length(uvRotated - vec2(0.22, 0.32))) * 0.10;
           moonColor -= spots * vec3(0.52, 0.50, 0.46);
 
           float facing = max(dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0);
@@ -798,12 +831,15 @@ Promise.all([
       const skyRadius = config.skyRadius ?? 3600;
 
       object.group.position.copy(camera.position).addScaledVector(skyDirection, skyRadius);
-      object.body.rotation.y += (config.spinSpeed ?? 0) * delta;
+      
+      if (object.bodyMaterial.uniforms?.spin !== undefined) {
+        object.bodyMaterial.uniforms.spin.value += (config.spinSpeed ?? 0) * delta;
+      }
       if (object.bodyMaterial.uniforms?.time) {
         object.bodyMaterial.uniforms.time.value = clock.elapsedTime;
       }
-      object.body.lookAt(camera.position);
-      object.glow.lookAt(camera.position);
+      
+      object.body.quaternion.copy(camera.quaternion);
     });
   }
 
@@ -1163,7 +1199,7 @@ Promise.all([
   function updateFreeRoamMovement(delta) {
     const speed01 = THREE.MathUtils.clamp(Math.abs(rideMotion.speed), 0, 1);
     const turnSpeed = 1.15 + speed01 * 0.55;
-    const freeMoveSpeed = 780;
+    const freeMoveSpeed = 480;
     const speedDirection = rideMotion.speed >= -0.04 ? 1 : -0.72;
 
     freeYaw += rideMotion.steer * turnSpeed * speedDirection * delta;
