@@ -16,7 +16,7 @@
 
   <title>Jitender Singh Chhapola — Portfolio</title>
   <link rel="stylesheet" href="css/terrain-portfolio.css?v=profile-20260529d">
-  <link id="theme-stylesheet" rel="stylesheet" href="css/themes/day.css?v=profile-20260529d">
+  <link id="theme-stylesheet" rel="stylesheet" href="css/themes/night.css?v=profile-20260529d">
   <script type="importmap">
     {
       "imports": {
@@ -29,48 +29,45 @@
 
 <body>
   <section class="app-view landing-screen" id="landing-view" aria-label="Portfolio landing">
-    <nav class="landing-nav" aria-label="Landing navigation">
-      <a class="landing-brand" href="#landing">PORTFOLIO</a>
-      <div class="landing-links">
-        <a href="assets/Jitender_Singh_Chhapola_Resume.pdf" download>Resume</a>
-        <a href="https://linkedin.com/in/jitender-singh-chhapola" target="_blank" rel="noreferrer">LinkedIn</a>
-        <a href="mailto:niteshjitender@gmail.com">Contact</a>
-      </div>
-    </nav>
-
-    <div class="landing-hero">
-      <div class="landing-copy">
-        <p class="eyebrow">Jitender Singh Chhapola</p>
-        <h1>Senior Backend Engineer building scalable distributed systems for high-traffic e-commerce platforms.</h1>
-        <p class="landing-subheadline">~5 years across Myntra, AJIO, and Interra Systems — working with Java, Spring Boot, Kafka, Kubernetes, Redis, Microservices, System Design, and GenAI/RAG workflows.</p>
-        <div class="landing-actions">
-          <a class="button button-primary" href="#journey">Start Interactive Journey</a>
-          <a class="button button-secondary" href="#profile">View Full Profile</a>
-        </div>
-        <div class="landing-secondary-links" aria-label="Secondary links">
+    <div class="landing-bento-container">
+      <nav class="landing-nav" aria-label="Landing navigation">
+        <a class="landing-brand" href="#landing">PORTFOLIO</a>
+        <div class="landing-links">
           <a href="assets/Jitender_Singh_Chhapola_Resume.pdf" download>Resume</a>
           <a href="https://linkedin.com/in/jitender-singh-chhapola" target="_blank" rel="noreferrer">LinkedIn</a>
           <a href="mailto:niteshjitender@gmail.com">Contact</a>
         </div>
-      </div>
+      </nav>
 
-      <div class="landing-impact-grid" aria-label="Impact highlights">
-        <article class="impact-mini-card">
-          <strong>900ms → 250ms</strong>
-          <span>Critical API latency reduction</span>
-        </article>
-        <article class="impact-mini-card">
-          <strong>178+ CPU cores saved</strong>
-          <span>Kubernetes optimization</span>
-        </article>
-        <article class="impact-mini-card">
-          <strong>3M+ RPM / 8M peak</strong>
-          <span>Redis migration for P0/P1 services</span>
-        </article>
-        <article class="impact-mini-card">
-          <strong>27 microservices</strong>
-          <span>Zero-disruption migration</span>
-        </article>
+      <div class="landing-bento-content">
+        <div class="bento-left">
+          <div class="profile-pic-container">
+            <img src="./assets/img/profile.png" alt="Jitender Singh Chhapola" class="profile-pic">
+          </div>
+        </div>
+        <div class="bento-right">
+          <h1 class="welcome-message">Hello, Welcome!</h1>
+          <div class="name-highlights-row">
+            <span class="my-name">I'm Jitender Singh Chhapola</span>
+            <div class="highlights-rotator-wrapper">
+              <div class="highlights-rotator">
+                <span>Backend Engineer</span>
+                <span>Distributed Systems</span>
+                <span>Java & Spring Boot</span>
+                <span>Kubernetes & Kafka</span>
+                <span>Redis & Microservices</span>
+                <span aria-hidden="true">Backend Engineer</span>
+              </div>
+            </div>
+          </div>
+          <div class="bento-actions">
+            <a class="creative-journey-button" href="#journey">
+              <span class="button-content">Start Journey</span>
+              <span class="button-glow"></span>
+            </a>
+            <a class="button button-ghost bento-secondary-btn" href="#profile">View Quick Profile</a>
+          </div>
+        </div>
       </div>
     </div>
   </section>

@@ -80,8 +80,8 @@ Promise.all([
   let currentMarkerIndex = 0;
   let rendererReady = false;
   const storedThemeName = getStoredThemeName();
-  let activeThemeName = themes[storedThemeName] ? storedThemeName : 'day';
-  let activeTheme = themes[activeThemeName] || themes.day;
+  let activeThemeName = themes[storedThemeName] ? storedThemeName : 'night';
+  let activeTheme = themes[activeThemeName] || themes.night;
   const sectionMarkers = [];
   const clock = new THREE.Clock();
   const keys = new Set();
@@ -652,7 +652,7 @@ Promise.all([
         transparent: true,
         opacity: 1,
         depthWrite: false,
-        depthTest: false,
+        depthTest: true,
         fog: false
       });
     const glowMaterial = new THREE.SpriteMaterial({
@@ -660,7 +660,7 @@ Promise.all([
       transparent: true,
       opacity: 0.3,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true,
       fog: false,
       blending: THREE.AdditiveBlending
     });
@@ -678,7 +678,7 @@ Promise.all([
     return new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true,
       fog: false,
       uniforms: {
         baseColor: { value: new THREE.Color(0xe1e1df) },
