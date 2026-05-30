@@ -413,7 +413,7 @@
       enabled: Boolean(enabled) && opacity > 0.01,
       color: hexToInt(stars.color || '#FFFFFF'),
       glowColor: hexToInt(stars.glowColor || stars.color || '#FFFFFF'),
-      count: Math.round(clamp(stars.count ?? (sourceName === 'moon' ? 170 : 0), 0, 320)),
+      count: Math.round(clamp(stars.count ?? (sourceName === 'moon' ? 2800 : 0), 0, 5000)),
       size: clamp(stars.size ?? 1, 0.2, 4),
       opacity,
       glow,

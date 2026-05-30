@@ -25,15 +25,15 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
       meta: '#EAF3FF',
 
       sky: {
-        color: '#C1D4E7',
+        color: '#72B0EE',
         contrast: 1,
         saturation: 1.5
       },
 
       stars: {
         enabled: false,
-        color: '#FFFFFF',
-        glowColor: '#D8F4FF',
+        color: '#FEFFF0',
+        glowColor: '#FEFFF0',
         count: 0,
         size: 0.9,
         opacity: 0,
@@ -46,12 +46,12 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
       },
 
       sun: {
-        color: '#FAFAFA',
-        azimuth: 52,
+        color: '#FFFFF5',
+        azimuth: 208,
         elevation: 35,
-        size: 180,
-        glow: 0.35,
-        intensity: 1.5
+        size: 125,
+        glow: 0.84,
+        intensity: 0
       },
 
       moon: {
@@ -64,13 +64,13 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
       },
 
       mountains: {
-        baseColor: '#55A1EC',
-        contrast: 0.38,
-        saturation: 0.42,
+        baseColor: '#EAF3FF',
+        contrast: 0,
+        saturation: 0.54,
         texture: 0.11,
         iceStrength: 1,
         shadowStrength: 1.5,
-        lightStrength: 0.81
+        lightStrength: 1.5
       },
 
       trail: {
@@ -130,7 +130,7 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
       meta: '#0B1324',
 
       sky: {
-        color: '#0A1429',
+        color: '#142343',
         contrast: 0.42,
         saturation: 0.7
       },
@@ -138,12 +138,12 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
       stars: {
         enabled: true,
         color: '#EAF7FF',
-        glowColor: '#8FEFFF',
-        count: 260,
-        size: 1.45,
-        opacity: 0.88,
-        glow: 0.78,
-        twinkle: 0.38
+        glowColor: '#90C6D0',
+        count: 2000,
+        size: 1.6,
+        opacity: 0.67,
+        glow: 0.57,
+        twinkle: 1
       },
 
       lightSource: {
@@ -152,7 +152,7 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
 
       moon: {
         color: '#E1E1DF',
-        azimuth: 34,
+        azimuth: 31,
         elevation: 23,
         size: 169,
         glow: 1,
@@ -172,19 +172,19 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
         baseColor: '#192C52',
         contrast: 0.28,
         saturation: 1.5,
-        texture: 0.22,
-        iceStrength: 0.61,
+        texture: 0.05,
+        iceStrength: 1,
         shadowStrength: 0.29,
         lightStrength: 1.5
       },
 
       trail: {
         color: '#03204F',
-        glowColor: '#192C52',
-        contrast: 0.22,
+        glowColor: '#35528D',
+        contrast: 0.59,
         saturation: 0.66,
-        opacity: 0.82,
-        glow: 0.75,
+        opacity: 0.76,
+        glow: 0.77,
         width: 18
       },
 
@@ -209,8 +209,8 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
       },
 
       horse: {
-        color: '#2F4E71',
-        tackColor: '#2F4E71',
+        color: '#BFBFBF',
+        tackColor: '#BFBFBF',
         scaleLength: 148,
         screenYOffset: -132,
         screenZOffset: -176
@@ -247,7 +247,7 @@ window.PORTFOLIO_VISUAL_CONTROL_SECTIONS = [
       { path: 'stars.enabled', label: 'Enabled', description: 'Show or hide the star field for this theme.', type: 'boolean' },
       { path: 'stars.color', label: 'Star color', description: 'Core color of the tiny star points.', type: 'color' },
       { path: 'stars.glowColor', label: 'Glow color', description: 'Soft glow color around brighter stars.', type: 'color' },
-      { path: 'stars.count', label: 'Count', description: 'Number of stars in the upper sky.', type: 'number', min: 0, max: 320, step: 1 },
+      { path: 'stars.count', label: 'Count', description: 'Number of stars across the whole sky dome.', type: 'number', min: 0, max: 5000, step: 10 },
       { path: 'stars.size', label: 'Size', description: 'Small point size for the stars.', type: 'number', min: 0.3, max: 3, step: 0.05 },
       { path: 'stars.opacity', label: 'Opacity', description: 'Overall star visibility.', type: 'number', min: 0, max: 1, step: 0.01 },
       { path: 'stars.glow', label: 'Glow', description: 'Extra glow layer around brighter stars.', type: 'number', min: 0, max: 1, step: 0.01 },
@@ -335,6 +335,17 @@ window.PORTFOLIO_VISUAL_CONTROL_SECTIONS = [
       { path: 'markers.opacity', label: 'Opacity', description: 'Overall marker visibility.', type: 'number', min: 0, max: 1.5, step: 0.01 },
       { path: 'markers.glow', label: 'Glow', description: 'Marker halo strength.', type: 'number', min: 0, max: 2, step: 0.01 },
       { path: 'markers.particles', label: 'Particles', description: 'Dissolve particle intensity.', type: 'number', min: 0, max: 2, step: 0.01 }
+    ]
+  },
+  {
+    title: 'Horse',
+    description: 'First-person horse silhouette and screen placement for the selected theme.',
+    controls: [
+      { path: 'horse.color', label: 'Horse color', description: 'Main silhouette color of the horse model.', type: 'color' },
+      { path: 'horse.tackColor', label: 'Tack color', description: 'Saddle, reins, and tack material color.', type: 'color' },
+      { path: 'horse.scaleLength', label: 'Scale length', description: 'Overall horse size in the first-person camera.', type: 'number', min: 80, max: 240, step: 1 },
+      { path: 'horse.screenYOffset', label: 'Screen Y offset', description: 'Vertical placement from bottom of camera view.', type: 'number', min: -240, max: -20, step: 1 },
+      { path: 'horse.screenZOffset', label: 'Screen Z offset', description: 'Forward/back placement relative to the camera.', type: 'number', min: -320, max: -80, step: 1 }
     ]
   },
   {

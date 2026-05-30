@@ -6,7 +6,7 @@
   --stage-bg: #F6F9FC;
   --stage-overlay:
     linear-gradient(180deg, rgba(252, 252, 253, 0.18), transparent 36%, rgba(236, 240, 244, 0.12)),
-    radial-gradient(circle at 48% 20%, rgba(44, 183, 255, 0.03), transparent 16%);
+    radial-gradient(circle at 48% 20%, rgba(44, 183, 255, 0.07), transparent 16%);
   --panel-border: rgba(44, 183, 255, 0.17);
   --nav-bg: linear-gradient(135deg, rgba(246, 249, 252, 0.61), rgba(246, 249, 252, 0.36));
   --panel-shadow: 0 20px 52px rgba(0, 0, 0, 0.15);
@@ -22,7 +22,7 @@
   --card-visual:
     linear-gradient(160deg, rgba(234, 243, 255, 0.9) 0 48%, transparent 49%),
     linear-gradient(20deg, transparent 0 54%, rgba(44, 183, 255, 0.36) 55%),
-    linear-gradient(145deg, #EAF3FF, #B0D0F1 45%, #2CB7FF);
+    linear-gradient(145deg, #EAF3FF, #FAFCFF 45%, #2CB7FF);
   --accent: #2CB7FF;
   --link-accent: #0A67C7;
   --sweep: rgba(44, 183, 255, 0.37);

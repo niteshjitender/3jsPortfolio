@@ -635,8 +635,8 @@ Promise.all([
     const glowTexture = createCelestialGlowTexture();
 
     celestialObjects = {
-      sun: createCelestialBody(glowTexture),
-      moon: createCelestialBody(glowTexture)
+      sun: createCelestialBody(glowTexture, 'sun'),
+      moon: createCelestialBody(glowTexture, 'moon')
     };
 
     scene.add(celestialObjects.sun.group);
@@ -644,15 +644,17 @@ Promise.all([
     applyCelestialTheme();
   }
 
-  function createCelestialBody(glowTexture) {
+  function createCelestialBody(glowTexture, type) {
     const group = new THREE.Group();
-    const bodyMaterial = new THREE.MeshBasicMaterial({
-      transparent: true,
-      opacity: 1,
-      depthWrite: false,
-      depthTest: false,
-      fog: false
-    });
+    const bodyMaterial = type === 'moon'
+      ? createMoonMaterial()
+      : new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 1,
+        depthWrite: false,
+        depthTest: false,
+        fog: false
+      });
     const glowMaterial = new THREE.SpriteMaterial({
       map: glowTexture,
       transparent: true,
@@ -670,6 +672,75 @@ Promise.all([
     group.add(glow, body);
 
     return { group, body, glow, bodyMaterial, glowMaterial };
+  }
+
+  function createMoonMaterial() {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      fog: false,
+      uniforms: {
+        baseColor: { value: new THREE.Color(0xe1e1df) },
+        opacity: { value: 1 },
+        time: { value: 0 }
+      },
+      vertexShader: `
+        varying vec3 vNormal;
+        varying vec2 vUv;
+
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vNormal;
+        varying vec2 vUv;
+        uniform vec3 baseColor;
+        uniform float opacity;
+        uniform float time;
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          float a = hash(i);
+          float b = hash(i + vec2(1.0, 0.0));
+          float c = hash(i + vec2(0.0, 1.0));
+          float d = hash(i + vec2(1.0, 1.0));
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+        }
+
+        void main() {
+          vec3 moonColor = baseColor;
+          float n = noise(vUv * 8.0 + time * 0.01) * 0.5;
+          n += noise(vUv * 20.0) * 0.25;
+          n += noise(vUv * 42.0) * 0.1;
+          moonColor -= n * 0.12;
+
+          float spots = 0.0;
+          spots += smoothstep(0.35, 0.0, length(vUv - vec2(0.30, 0.60))) * 0.25;
+          spots += smoothstep(0.20, 0.0, length(vUv - vec2(0.62, 0.42))) * 0.18;
+          spots += smoothstep(0.15, 0.0, length(vUv - vec2(0.50, 0.70))) * 0.12;
+          spots += smoothstep(0.10, 0.0, length(vUv - vec2(0.22, 0.32))) * 0.10;
+          moonColor -= spots * vec3(0.52, 0.50, 0.46);
+
+          float facing = max(dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0);
+          float limb = 1.0 - pow(1.0 - facing, 2.0);
+          vec3 lightDir = normalize(vec3(-0.42, 0.58, 0.70));
+          float diff = max(dot(vNormal, lightDir), 0.0);
+          vec3 lit = moonColor * (0.72 + 0.28 * diff) * (0.78 + 0.22 * limb);
+
+          gl_FragColor = vec4(lit, opacity);
+        }
+      `
+    });
   }
 
   function createCelestialGlowTexture() {
@@ -704,8 +775,13 @@ Promise.all([
     object.group.visible = Boolean(config.enabled);
     object.body.scale.setScalar(config.size ?? 1);
     object.glow.scale.set(config.glowSize ?? 1, config.glowSize ?? 1, 1);
-    object.bodyMaterial.color.setHex(config.color ?? 0xffffff);
-    object.bodyMaterial.opacity = config.opacity ?? 1;
+    if (object.bodyMaterial.uniforms?.baseColor) {
+      object.bodyMaterial.uniforms.baseColor.value.setHex(config.color ?? 0xffffff);
+      object.bodyMaterial.uniforms.opacity.value = config.opacity ?? 1;
+    } else {
+      object.bodyMaterial.color.setHex(config.color ?? 0xffffff);
+      object.bodyMaterial.opacity = config.opacity ?? 1;
+    }
     object.glowMaterial.color.setHex(config.glowColor ?? config.color ?? 0xffffff);
     object.glowMaterial.opacity = config.glowOpacity ?? 0.25;
     object.bodyMaterial.needsUpdate = true;
@@ -723,6 +799,9 @@ Promise.all([
 
       object.group.position.copy(camera.position).addScaledVector(skyDirection, skyRadius);
       object.body.rotation.y += (config.spinSpeed ?? 0) * delta;
+      if (object.bodyMaterial.uniforms?.time) {
+        object.bodyMaterial.uniforms.time.value = clock.elapsedTime;
+      }
       object.body.lookAt(camera.position);
       object.glow.lookAt(camera.position);
     });
@@ -752,22 +831,11 @@ Promise.all([
     starFieldGroup.name = 'night-sky-stars';
 
     [
-      { capacity: 230, ratio: 0.72, size: 1, opacity: 1, phase: 0.4, glow: false },
-      { capacity: 90, ratio: 0.28, size: 2.15, opacity: 0.62, phase: 2.1, glow: true }
+      { capacity: 3600, ratio: 0.72, size: 1, opacity: 1, phase: 0.4, glow: false },
+      { capacity: 1400, ratio: 0.28, size: 2.45, opacity: 0.38, phase: 2.1, glow: true }
     ].forEach((layer) => {
       const geometry = createStarGeometry(layer.capacity);
-      const material = new THREE.PointsMaterial({
-        map: starTexture,
-        color: 0xffffff,
-        size: 1,
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-        depthTest: true,
-        fog: false,
-        blending: THREE.AdditiveBlending,
-        sizeAttenuation: false
-      });
+      const material = createStarMaterial(starTexture);
       const points = new THREE.Points(geometry, material);
 
       points.frustumCulled = false;
@@ -781,22 +849,77 @@ Promise.all([
 
   function createStarGeometry(count) {
     const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const phases = new Float32Array(count);
 
     for (let index = 0; index < count; index += 1) {
       const azimuth = Math.random() * Math.PI * 2;
-      const elevation = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(18, 84, Math.pow(Math.random(), 0.58)));
-      const horizontal = Math.cos(elevation);
+      const vertical = THREE.MathUtils.lerp(-0.12, 0.98, Math.pow(Math.random(), 0.72));
+      const horizontal = Math.sqrt(Math.max(0.01, 1 - vertical * vertical));
       const radiusJitter = 0.94 + Math.random() * 0.12;
       const offset = index * 3;
 
       positions[offset] = Math.sin(azimuth) * horizontal * radiusJitter;
-      positions[offset + 1] = Math.sin(elevation) * radiusJitter;
+      positions[offset + 1] = vertical * radiusJitter;
       positions[offset + 2] = -Math.cos(azimuth) * horizontal * radiusJitter;
+      sizes[index] = 0.45 + Math.random() * 2.55;
+      phases[index] = Math.random() * Math.PI * 2;
     }
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
     return geometry;
+  }
+
+  function createStarMaterial(starTexture) {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        starTexture: { value: starTexture },
+        color: { value: new THREE.Color(0xffffff) },
+        opacity: { value: 0 },
+        baseSize: { value: 1 },
+        time: { value: 0 },
+        twinkle: { value: 0 }
+      },
+      vertexShader: `
+        attribute float size;
+        attribute float phase;
+        varying float vPhase;
+
+        uniform float baseSize;
+        uniform float time;
+        uniform float twinkle;
+
+        void main() {
+          vPhase = phase;
+          float pulse = 1.0 + sin(time * 1.6 + phase) * twinkle * 0.18;
+          gl_PointSize = size * baseSize * pulse;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying float vPhase;
+
+        uniform sampler2D starTexture;
+        uniform vec3 color;
+        uniform float opacity;
+        uniform float time;
+        uniform float twinkle;
+
+        void main() {
+          vec4 texel = texture2D(starTexture, gl_PointCoord);
+          float shimmer = 1.0 + sin(time * 2.2 + vPhase * 1.7) * twinkle * 0.16;
+          gl_FragColor = vec4(color, texel.a * opacity * shimmer);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      fog: false,
+      blending: THREE.AdditiveBlending
+    });
   }
 
   function createStarTexture() {
@@ -823,7 +946,7 @@ Promise.all([
 
     const config = activeTheme.stars;
     const visible = Boolean(config.enabled) && config.count > 0 && config.opacity > 0.01;
-    const count = THREE.MathUtils.clamp(config.count ?? 0, 0, 320);
+    const count = THREE.MathUtils.clamp(config.count ?? 0, 0, 5000);
     let allocated = 0;
 
     starFieldGroup.visible = visible;
@@ -837,12 +960,13 @@ Promise.all([
 
       allocated += layerCount;
       layer.points.geometry.setDrawRange(0, Math.min(layer.capacity, layerCount));
-      layer.material.color.setHex(layer.glow ? config.glowColor : config.color);
-      layer.material.size = (config.size ?? 1) * layer.size;
+      layer.material.uniforms.color.value.setHex(layer.glow ? config.glowColor : config.color);
+      layer.material.uniforms.baseSize.value = (config.size ?? 1) * layer.size;
+      layer.material.uniforms.twinkle.value = config.twinkle ?? 0;
       layer.baseOpacity = visible
         ? (config.opacity ?? 0) * layer.opacity * (layer.glow ? (config.glow ?? 0) : 1)
         : 0;
-      layer.material.opacity = layer.baseOpacity;
+      layer.material.uniforms.opacity.value = layer.baseOpacity;
       layer.material.needsUpdate = true;
     });
   }
@@ -860,7 +984,8 @@ Promise.all([
     starLayers.forEach((layer, index) => {
       const wave = Math.sin(elapsed * (0.72 + index * 0.19) + layer.phase);
       const shimmer = Math.sin(elapsed * (1.28 + index * 0.22) + layer.phase * 1.7);
-      layer.material.opacity = layer.baseOpacity * (1 + wave * twinkle * 0.12 + shimmer * twinkle * 0.06);
+      layer.material.uniforms.time.value = elapsed;
+      layer.material.uniforms.opacity.value = layer.baseOpacity * (1 + wave * twinkle * 0.12 + shimmer * twinkle * 0.06);
     });
   }
 
