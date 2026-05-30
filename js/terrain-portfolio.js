@@ -52,9 +52,13 @@ Promise.all([
   let freeYaw = 0;
   const freePosition = new THREE.Vector3();
   let data;
+  let celestialObjects;
+  let flowFogGroup;
+  const flowFogSprites = [];
   let horsePivot;
   let horseModel;
   let horseMixer = null;
+  let horseMaterials;
   let horseWalkingAudio = null;
   let horseAudioPlayPending = false;
   let horseAudioBlocked = false;
@@ -135,7 +139,19 @@ Promise.all([
       if (themeName === activeThemeName) {
         activeTheme = themes[activeThemeName];
         applyThemeToScene();
+        applyThemeDocument();
       }
+    },
+    syncVisualConfig() {
+      if (typeof window.syncPortfolioThemesFromVisualConfig === 'function') {
+        window.syncPortfolioThemesFromVisualConfig();
+        activeTheme = themes[activeThemeName];
+        applyThemeDocument();
+        applyThemeToScene();
+      }
+    },
+    switchTheme(themeName) {
+      switchTheme(themeName);
     }
   };
   window.dispatchEvent(new Event('portfolio-runtime-ready'));
@@ -399,6 +415,12 @@ Promise.all([
       themeStylesheet.setAttribute('href', activeTheme.css);
     }
 
+    if (activeTheme.cssVars) {
+      Object.entries(activeTheme.cssVars).forEach(([property, value]) => {
+        document.documentElement.style.setProperty(property, value);
+      });
+    }
+
     if (metaTheme) {
       metaTheme.setAttribute('content', activeTheme.meta);
     }
@@ -422,6 +444,9 @@ Promise.all([
     scene.background.setHex(activeTheme.sceneBg);
     scene.fog.color.setHex(activeTheme.fog);
     scene.fog.density = activeTheme.fogDensity ?? 0.0016;
+    applyCelestialTheme();
+    applyFlowFogTheme();
+    applyHorseTheme();
 
     if (mesh && data) {
       replaceTerrainTexture();
@@ -442,6 +467,7 @@ Promise.all([
     scene.add(camera);
     scene.background = new THREE.Color(activeTheme.sceneBg);
     scene.fog = new THREE.FogExp2(activeTheme.fog, activeTheme.fogDensity ?? 0.0016);
+    createCelestialObjects();
 
     data = generateHeight(worldWidth, worldDepth);
 
@@ -460,6 +486,7 @@ Promise.all([
     mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture }));
     scene.add(mesh);
 
+    createFlowFogObjects();
     createSectionMarkers();
     updateCameraAlongPath(0);
 
@@ -594,7 +621,228 @@ Promise.all([
     updatePathMovement(delta);
     updateSectionMarkers(delta);
     updateJourneyProgress();
+    updateCelestialObjects(delta);
+    updateFlowFog(delta);
     renderer.render(scene, camera);
+  }
+
+  function createCelestialObjects() {
+    const glowTexture = createCelestialGlowTexture();
+
+    celestialObjects = {
+      sun: createCelestialBody(glowTexture),
+      moon: createCelestialBody(glowTexture)
+    };
+
+    scene.add(celestialObjects.sun.group);
+    scene.add(celestialObjects.moon.group);
+    applyCelestialTheme();
+  }
+
+  function createCelestialBody(glowTexture) {
+    const group = new THREE.Group();
+    const bodyMaterial = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 1,
+      depthWrite: false,
+      depthTest: false,
+      fog: false
+    });
+    const glowMaterial = new THREE.SpriteMaterial({
+      map: glowTexture,
+      transparent: true,
+      opacity: 0.3,
+      depthWrite: false,
+      depthTest: false,
+      fog: false,
+      blending: THREE.AdditiveBlending
+    });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), bodyMaterial);
+    const glow = new THREE.Sprite(glowMaterial);
+
+    body.renderOrder = 3;
+    glow.renderOrder = 2;
+    group.add(glow, body);
+
+    return { group, body, glow, bodyMaterial, glowMaterial };
+  }
+
+  function createCelestialGlowTexture() {
+    const textureCanvas = document.createElement('canvas');
+    textureCanvas.width = 256;
+    textureCanvas.height = 256;
+    const context = textureCanvas.getContext('2d');
+    const gradient = context.createRadialGradient(128, 128, 4, 128, 128, 128);
+
+    gradient.addColorStop(0, 'rgba(255,255,255,0.95)');
+    gradient.addColorStop(0.18, 'rgba(255,255,255,0.62)');
+    gradient.addColorStop(0.52, 'rgba(255,255,255,0.16)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 256, 256);
+
+    const glowTexture = new THREE.CanvasTexture(textureCanvas);
+    glowTexture.colorSpace = THREE.SRGBColorSpace;
+    return glowTexture;
+  }
+
+  function applyCelestialTheme() {
+    if (!celestialObjects || !activeTheme?.celestial) return;
+
+    applyCelestialBodyTheme(celestialObjects.sun, activeTheme.celestial.sun);
+    applyCelestialBodyTheme(celestialObjects.moon, activeTheme.celestial.moon);
+  }
+
+  function applyCelestialBodyTheme(object, config) {
+    if (!object || !config) return;
+
+    object.group.visible = Boolean(config.enabled);
+    object.body.scale.setScalar(config.size ?? 1);
+    object.glow.scale.set(config.glowSize ?? 1, config.glowSize ?? 1, 1);
+    object.bodyMaterial.color.setHex(config.color ?? 0xffffff);
+    object.bodyMaterial.opacity = config.opacity ?? 1;
+    object.glowMaterial.color.setHex(config.glowColor ?? config.color ?? 0xffffff);
+    object.glowMaterial.opacity = config.glowOpacity ?? 0.25;
+    object.bodyMaterial.needsUpdate = true;
+    object.glowMaterial.needsUpdate = true;
+  }
+
+  function updateCelestialObjects(delta) {
+    if (!celestialObjects || !activeTheme?.celestial) return;
+
+    Object.entries(celestialObjects).forEach(([name, object]) => {
+      const config = activeTheme.celestial[name];
+      if (!config?.enabled) return;
+      const skyDirection = getSkyDirection(config);
+      const skyRadius = config.skyRadius ?? 3600;
+
+      object.group.position.copy(camera.position).addScaledVector(skyDirection, skyRadius);
+      object.body.rotation.y += (config.spinSpeed ?? 0) * delta;
+      object.body.lookAt(camera.position);
+      object.glow.lookAt(camera.position);
+    });
+  }
+
+  function getSkyDirection(config) {
+    if (Array.isArray(config.direction)) {
+      return new THREE.Vector3(...config.direction).normalize();
+    }
+
+    const azimuth = THREE.MathUtils.degToRad(config.azimuth ?? 0);
+    const elevation = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(config.elevation ?? 24, 0, 89));
+    const horizontal = Math.cos(elevation);
+
+    return new THREE.Vector3(
+      Math.sin(azimuth) * horizontal,
+      Math.sin(elevation),
+      -Math.cos(azimuth) * horizontal
+    ).normalize();
+  }
+
+  function createFlowFogObjects() {
+    if (!path || flowFogGroup) return;
+
+    const fogTexture = createFlowFogTexture();
+    flowFogGroup = new THREE.Group();
+    flowFogGroup.name = 'valley-flowing-fog';
+
+    for (let index = 0; index < 34; index += 1) {
+      const material = new THREE.SpriteMaterial({
+        map: fogTexture,
+        color: activeTheme.fogFlow?.color ?? 0xffffff,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        depthTest: true,
+        fog: false,
+        blending: THREE.NormalBlending
+      });
+      const sprite = new THREE.Sprite(material);
+
+      sprite.renderOrder = 1;
+      sprite.userData.progress = index / 34;
+      sprite.userData.phase = Math.random() * Math.PI * 2;
+      sprite.userData.lateral = (Math.random() - 0.5) * 0.9;
+      sprite.userData.scale = 0.72 + Math.random() * 0.56;
+      flowFogSprites.push(sprite);
+      flowFogGroup.add(sprite);
+    }
+
+    scene.add(flowFogGroup);
+    applyFlowFogTheme();
+    updateFlowFog(0);
+  }
+
+  function createFlowFogTexture() {
+    const textureCanvas = document.createElement('canvas');
+    textureCanvas.width = 512;
+    textureCanvas.height = 128;
+    const context = textureCanvas.getContext('2d');
+    const gradient = context.createRadialGradient(256, 64, 8, 256, 64, 250);
+
+    gradient.addColorStop(0, 'rgba(255,255,255,0.62)');
+    gradient.addColorStop(0.22, 'rgba(255,255,255,0.3)');
+    gradient.addColorStop(0.58, 'rgba(255,255,255,0.08)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, textureCanvas.width, textureCanvas.height);
+
+    const texture = new THREE.CanvasTexture(textureCanvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  function applyFlowFogTheme() {
+    if (!flowFogSprites.length || !activeTheme?.fogFlow) return;
+
+    const blending = activeThemeName === 'night' ? THREE.AdditiveBlending : THREE.NormalBlending;
+
+    flowFogSprites.forEach((sprite) => {
+      sprite.material.color.setHex(activeTheme.fogFlow.color ?? 0xffffff);
+      sprite.material.blending = blending;
+      sprite.material.needsUpdate = true;
+    });
+  }
+
+  function updateFlowFog(delta) {
+    if (!flowFogGroup || !activeTheme?.fogFlow || !path) return;
+
+    const config = activeTheme.fogFlow;
+    const density = THREE.MathUtils.clamp(config.density ?? 0, 0, 1);
+    const visibleCount = Math.round(flowFogSprites.length * density);
+    const elapsed = clock.elapsedTime;
+    const speed = (config.speed ?? 0) * 0.022;
+    const baseOpacity = (config.opacity ?? 0) * (0.34 + (config.glow ?? 0) * 0.54);
+
+    flowFogSprites.forEach((sprite, index) => {
+      const shouldShow = index < visibleCount && baseOpacity > 0.005;
+      sprite.visible = shouldShow;
+
+      if (!shouldShow) {
+        sprite.material.opacity = 0;
+        return;
+      }
+
+      const progress = (sprite.userData.progress + elapsed * speed) % 1;
+      const point = path.getPointAt(progress);
+      const tangent = path.getTangentAt(progress).normalize();
+      const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+      const phase = sprite.userData.phase;
+      const wave = Math.sin(elapsed * 0.55 + phase + progress * Math.PI * 4);
+      const lateral = (sprite.userData.lateral * 0.42 + wave * 0.1) * (config.spread ?? 300);
+      const fade = Math.sin(progress * Math.PI);
+      const fogHeight = (config.height ?? 26) + Math.sin(elapsed * 0.42 + phase) * 9;
+
+      sprite.position.copy(point).addScaledVector(side, lateral);
+      sprite.position.y = getTerrainHeight(sprite.position.x, sprite.position.z) + fogHeight;
+      sprite.scale.set(
+        (config.spread ?? 300) * sprite.userData.scale,
+        (config.spread ?? 300) * (0.14 + (config.glow ?? 0) * 0.05),
+        1
+      );
+      sprite.material.opacity = baseOpacity * (0.18 + fade * 0.82);
+      sprite.material.rotation = wave * 0.18;
+    });
   }
 
   function updateJourneyProgress() {
@@ -752,8 +1000,8 @@ Promise.all([
 
     horsePivot.position.set(
       Math.sin(rideMotion.phase * 0.5) * speed01 * 1.8,
-      -132 + walkBounce * 1.8,
-      -176 - speed01 * 8
+      (activeTheme.horse?.screenYOffset ?? -132) + walkBounce * 1.8,
+      (activeTheme.horse?.screenZOffset ?? -176) - speed01 * 8
     );
     horsePivot.rotation.order = 'YXZ';
     horsePivot.rotation.y = -rideMotion.steer * 0.34 + Math.sin(rideMotion.phase * 0.42) * speed01 * 0.018;
@@ -762,6 +1010,22 @@ Promise.all([
 
     applyHorseSteeringPose(speed01);
     syncHorseWalkingAudio(isWalking, speed01);
+  }
+
+  function applyHorseTheme() {
+    if (horseMaterials) {
+      horseMaterials.silhouetteMaterial.color.setHex(activeTheme.horse?.silhouette ?? 0x020509);
+      horseMaterials.tackMaterial.color.setHex(activeTheme.horse?.tack ?? 0x101927);
+    }
+
+    const forwardGroup = horseModel?.children?.[0];
+    const root = forwardGroup?.children?.[0];
+    if (!root?.userData?.baseSize) return;
+
+    const baseSize = root.userData.baseSize;
+    const targetLength = activeTheme.horse?.scaleLength ?? 148;
+    const scale = targetLength / Math.max(baseSize.x, baseSize.y, baseSize.z, 1);
+    root.scale.setScalar(scale);
   }
 
   function createSectionMarkers() {
@@ -818,13 +1082,13 @@ Promise.all([
       (gltf) => {
         const object = gltf.scene;
         const silhouetteMaterial = new THREE.MeshBasicMaterial({
-          color: 0x020509,
+          color: activeTheme.horse?.silhouette ?? 0x020509,
           side: THREE.DoubleSide,
           depthTest: false,
           depthWrite: false
         });
         const tackMaterial = new THREE.MeshBasicMaterial({
-          color: 0x101927,
+          color: activeTheme.horse?.tack ?? 0x101927,
           side: THREE.DoubleSide,
           depthTest: false,
           depthWrite: false
@@ -850,8 +1114,10 @@ Promise.all([
         box.getCenter(center);
         box.getSize(size);
         object.position.sub(center);
+        object.userData.baseSize = size.clone();
+        horseMaterials = { silhouetteMaterial, tackMaterial };
 
-        const targetLength = 148;
+        const targetLength = activeTheme.horse?.scaleLength ?? 148;
         const scale = targetLength / Math.max(size.x, size.y, size.z, 1);
         object.scale.setScalar(scale);
         object.rotation.set(0, Math.PI, 0);
@@ -872,6 +1138,7 @@ Promise.all([
         }
 
         setupHorseSteeringRig(object);
+        applyHorseTheme();
       },
       undefined,
       (error) => {
@@ -1589,6 +1856,23 @@ Promise.all([
   }
 
   function getTerrainPaletteColor(heightValue) {
+    if (activeTheme.terrain?.paletteStops?.length) {
+      const heightNorm = THREE.MathUtils.clamp(heightValue / 255, 0, 1);
+      const stops = activeTheme.terrain.paletteStops;
+
+      for (let index = 1; index < stops.length; index += 1) {
+        const previous = stops[index - 1];
+        const next = stops[index];
+
+        if (heightNorm <= next.at) {
+          const alpha = THREE.MathUtils.smoothstep(heightNorm, previous.at, next.at);
+          return mixPaletteColor(previous.color, next.color, alpha);
+        }
+      }
+
+      return stops[stops.length - 1].color;
+    }
+
     const { shadow, mid, high, snow } = activeTheme.terrain;
     const heightNorm = THREE.MathUtils.clamp(heightValue / 255, 0, 1);
 
@@ -1629,13 +1913,13 @@ Promise.all([
     });
 
     const distance = Math.sqrt(nearestDistanceSquared);
-    const { width: trailWidth, falloff } = activeTheme.trail;
+    const { width: trailWidth, falloff, coreRatio = 0.42 } = activeTheme.trail;
 
     if (distance > falloff) {
       return { core: 0, edge: 0, total: 0 };
     }
 
-    const core = 1 - THREE.MathUtils.smoothstep(distance, trailWidth * 0.42, trailWidth);
+    const core = 1 - THREE.MathUtils.smoothstep(distance, trailWidth * coreRatio, trailWidth);
     const shoulder = 1 - THREE.MathUtils.smoothstep(distance, trailWidth, falloff);
     const edge = shoulder * (1 - core);
 
@@ -1661,7 +1945,9 @@ Promise.all([
     let shade;
 
     const vector3 = new THREE.Vector3(0, 0, 0);
-    const sun = new THREE.Vector3(1, 1, 1);
+    const lighting = activeTheme.terrain?.lighting || {};
+    const sunDirection = lighting.sunDirection || [1, 1, 1];
+    const sun = new THREE.Vector3(...sunDirection);
     sun.normalize();
 
     const textureCanvas = document.createElement('canvas');
@@ -1694,10 +1980,14 @@ Promise.all([
       const worldZ = terrainZ / (height - 1) * terrainSize - terrainHalf;
       const trailBlend = getTrailBlend(worldX, worldZ);
       const baseColor = getTerrainPaletteColor(heightData[j]);
-      const shadowFloor = activeThemeName === 'night' ? 0.27 : 0.42;
+      const shadowFloor = lighting.shadowFloor ?? (activeThemeName === 'night' ? 0.27 : 0.42);
       const shadow = THREE.MathUtils.clamp(shade, shadowFloor, 1);
-      const light = activeThemeName === 'night' ? 0.44 + shadow * 0.58 : 0.66 + shadow * 0.46;
-      const haze = THREE.MathUtils.smoothstep(heightData[j] / 255, 0.42, 0.88) * (activeThemeName === 'night' ? 5 : 11);
+      const light = (lighting.lightBase ?? 0.6) + shadow * (lighting.lightStrength ?? 0.5);
+      const haze = THREE.MathUtils.smoothstep(
+        heightData[j] / 255,
+        lighting.hazeStart ?? 0.42,
+        lighting.hazeEnd ?? 0.88
+      ) * (lighting.hazeAmount ?? 8);
       let litColor = [
         baseColor[0] * light + haze,
         baseColor[1] * light + haze,
@@ -1733,8 +2023,10 @@ Promise.all([
     image = context.getImageData(0, 0, canvasScaled.width, canvasScaled.height);
     imageData = image.data;
 
+    const surfaceNoise = activeTheme.terrain?.lighting?.surfaceNoise ?? 5;
+
     for (let i = 0, l = imageData.length; i < l; i += 4) {
-      const v = ~~(Math.random() * 5);
+      const v = ~~(Math.random() * surfaceNoise);
 
       imageData[i] += v;
       imageData[i + 1] += v;
