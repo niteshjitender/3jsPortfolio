@@ -402,6 +402,26 @@
     };
   }
 
+  function buildStars(theme) {
+    const sourceName = activeSourceName(theme);
+    const stars = theme.stars || {};
+    const enabled = stars.enabled ?? sourceName === 'moon';
+    const opacity = clamp(stars.opacity ?? (sourceName === 'moon' ? 0.58 : 0), 0, 1);
+    const glow = clamp(stars.glow ?? 0.35, 0, 1);
+
+    return {
+      enabled: Boolean(enabled) && opacity > 0.01,
+      color: hexToInt(stars.color || '#FFFFFF'),
+      glowColor: hexToInt(stars.glowColor || stars.color || '#FFFFFF'),
+      count: Math.round(clamp(stars.count ?? (sourceName === 'moon' ? 170 : 0), 0, 320)),
+      size: clamp(stars.size ?? 1, 0.2, 4),
+      opacity,
+      glow,
+      twinkle: clamp(stars.twinkle ?? 0.24, 0, 1),
+      skyRadius: SKY_RADIUS * 0.88
+    };
+  }
+
   function buildHorse(theme) {
     return {
       silhouette: hexToInt(theme.horse.color),
@@ -433,6 +453,7 @@
         ...activeSource,
         direction: directionFromAngles(activeSource.azimuth, activeSource.elevation)
       },
+      stars: buildStars(theme),
       celestial: {
         sun: buildCelestialSource(theme, 'sun'),
         moon: buildCelestialSource(theme, 'moon')

@@ -53,8 +53,10 @@ Promise.all([
   const freePosition = new THREE.Vector3();
   let data;
   let celestialObjects;
+  let starFieldGroup;
   let flowFogGroup;
   const flowFogSprites = [];
+  const starLayers = [];
   let horsePivot;
   let horseModel;
   let horseMixer = null;
@@ -445,6 +447,7 @@ Promise.all([
     scene.fog.color.setHex(activeTheme.fog);
     scene.fog.density = activeTheme.fogDensity ?? 0.0016;
     applyCelestialTheme();
+    applyStarFieldTheme();
     applyFlowFogTheme();
     applyHorseTheme();
 
@@ -468,6 +471,7 @@ Promise.all([
     scene.background = new THREE.Color(activeTheme.sceneBg);
     scene.fog = new THREE.FogExp2(activeTheme.fog, activeTheme.fogDensity ?? 0.0016);
     createCelestialObjects();
+    createStarFieldObjects();
 
     data = generateHeight(worldWidth, worldDepth);
 
@@ -622,6 +626,7 @@ Promise.all([
     updateSectionMarkers(delta);
     updateJourneyProgress();
     updateCelestialObjects(delta);
+    updateStarField(delta);
     updateFlowFog(delta);
     renderer.render(scene, camera);
   }
@@ -737,6 +742,126 @@ Promise.all([
       Math.sin(elevation),
       -Math.cos(azimuth) * horizontal
     ).normalize();
+  }
+
+  function createStarFieldObjects() {
+    if (starFieldGroup) return;
+
+    const starTexture = createStarTexture();
+    starFieldGroup = new THREE.Group();
+    starFieldGroup.name = 'night-sky-stars';
+
+    [
+      { capacity: 230, ratio: 0.72, size: 1, opacity: 1, phase: 0.4, glow: false },
+      { capacity: 90, ratio: 0.28, size: 2.15, opacity: 0.62, phase: 2.1, glow: true }
+    ].forEach((layer) => {
+      const geometry = createStarGeometry(layer.capacity);
+      const material = new THREE.PointsMaterial({
+        map: starTexture,
+        color: 0xffffff,
+        size: 1,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        depthTest: true,
+        fog: false,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: false
+      });
+      const points = new THREE.Points(geometry, material);
+
+      points.frustumCulled = false;
+      starLayers.push({ points, material, ...layer, baseOpacity: 0 });
+      starFieldGroup.add(points);
+    });
+
+    scene.add(starFieldGroup);
+    applyStarFieldTheme();
+  }
+
+  function createStarGeometry(count) {
+    const positions = new Float32Array(count * 3);
+
+    for (let index = 0; index < count; index += 1) {
+      const azimuth = Math.random() * Math.PI * 2;
+      const elevation = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(18, 84, Math.pow(Math.random(), 0.58)));
+      const horizontal = Math.cos(elevation);
+      const radiusJitter = 0.94 + Math.random() * 0.12;
+      const offset = index * 3;
+
+      positions[offset] = Math.sin(azimuth) * horizontal * radiusJitter;
+      positions[offset + 1] = Math.sin(elevation) * radiusJitter;
+      positions[offset + 2] = -Math.cos(azimuth) * horizontal * radiusJitter;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return geometry;
+  }
+
+  function createStarTexture() {
+    const textureCanvas = document.createElement('canvas');
+    textureCanvas.width = 64;
+    textureCanvas.height = 64;
+    const context = textureCanvas.getContext('2d');
+    const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 31);
+
+    gradient.addColorStop(0, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.18, 'rgba(255,255,255,0.92)');
+    gradient.addColorStop(0.48, 'rgba(255,255,255,0.26)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 64, 64);
+
+    const texture = new THREE.CanvasTexture(textureCanvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  function applyStarFieldTheme() {
+    if (!starFieldGroup || !activeTheme?.stars) return;
+
+    const config = activeTheme.stars;
+    const visible = Boolean(config.enabled) && config.count > 0 && config.opacity > 0.01;
+    const count = THREE.MathUtils.clamp(config.count ?? 0, 0, 320);
+    let allocated = 0;
+
+    starFieldGroup.visible = visible;
+    starFieldGroup.scale.setScalar(config.skyRadius ?? 3300);
+
+    starLayers.forEach((layer, index) => {
+      const isLast = index === starLayers.length - 1;
+      const layerCount = isLast
+        ? Math.max(0, count - allocated)
+        : Math.min(layer.capacity, Math.round(count * layer.ratio));
+
+      allocated += layerCount;
+      layer.points.geometry.setDrawRange(0, Math.min(layer.capacity, layerCount));
+      layer.material.color.setHex(layer.glow ? config.glowColor : config.color);
+      layer.material.size = (config.size ?? 1) * layer.size;
+      layer.baseOpacity = visible
+        ? (config.opacity ?? 0) * layer.opacity * (layer.glow ? (config.glow ?? 0) : 1)
+        : 0;
+      layer.material.opacity = layer.baseOpacity;
+      layer.material.needsUpdate = true;
+    });
+  }
+
+  function updateStarField() {
+    if (!starFieldGroup || !activeTheme?.stars) return;
+
+    starFieldGroup.position.copy(camera.position);
+
+    if (!starFieldGroup.visible) return;
+
+    const twinkle = THREE.MathUtils.clamp(activeTheme.stars.twinkle ?? 0, 0, 1);
+    const elapsed = clock.elapsedTime;
+
+    starLayers.forEach((layer, index) => {
+      const wave = Math.sin(elapsed * (0.72 + index * 0.19) + layer.phase);
+      const shimmer = Math.sin(elapsed * (1.28 + index * 0.22) + layer.phase * 1.7);
+      layer.material.opacity = layer.baseOpacity * (1 + wave * twinkle * 0.12 + shimmer * twinkle * 0.06);
+    });
   }
 
   function createFlowFogObjects() {

@@ -25,9 +25,20 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
       meta: '#EAF3FF',
 
       sky: {
-        color: '#C8DBEE',
+        color: '#C1D4E7',
         contrast: 1,
         saturation: 1.5
+      },
+
+      stars: {
+        enabled: false,
+        color: '#FFFFFF',
+        glowColor: '#D8F4FF',
+        count: 0,
+        size: 0.9,
+        opacity: 0,
+        glow: 0,
+        twinkle: 0
       },
 
       lightSource: {
@@ -53,13 +64,13 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
       },
 
       mountains: {
-        baseColor: '#8CBAE8',
-        contrast: 0.19,
-        saturation: 0.31,
-        texture: 0.26,
+        baseColor: '#55A1EC',
+        contrast: 0.38,
+        saturation: 0.42,
+        texture: 0.11,
         iceStrength: 1,
         shadowStrength: 1.5,
-        lightStrength: 0.46
+        lightStrength: 0.81
       },
 
       trail: {
@@ -86,8 +97,8 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
         color: '#F7F7FD',
         glowColor: '#E8ECF8',
         contrast: 0.14,
-        saturation: 0.35,
-        opacity: 1.35,
+        saturation: 0.74,
+        opacity: 1.5,
         glow: 2,
         particles: 2
       },
@@ -122,6 +133,17 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
         color: '#0A1429',
         contrast: 0.42,
         saturation: 0.7
+      },
+
+      stars: {
+        enabled: true,
+        color: '#EAF7FF',
+        glowColor: '#8FEFFF',
+        count: 260,
+        size: 1.45,
+        opacity: 0.88,
+        glow: 0.78,
+        twinkle: 0.38
       },
 
       lightSource: {
@@ -187,8 +209,8 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
       },
 
       horse: {
-        color: '#020509',
-        tackColor: '#101927',
+        color: '#2F4E71',
+        tackColor: '#2F4E71',
         scaleLength: 148,
         screenYOffset: -132,
         screenZOffset: -176
@@ -201,7 +223,7 @@ window.PORTFOLIO_VISUAL_THEME_CONFIG = {
         secondaryAccentColor: '#FFB86B',
         contrast: 0.52,
         saturation: 0.48,
-        glassOpacity: 0.72,
+        glassOpacity: 0.35,
         borderOpacity: 0.3
       }
     }
@@ -216,6 +238,20 @@ window.PORTFOLIO_VISUAL_CONTROL_SECTIONS = [
       { path: 'sky.color', label: 'Sky color', description: 'Main sky/background color.', type: 'color' },
       { path: 'sky.contrast', label: 'Sky contrast', description: 'Higher contrast deepens top and bottom atmosphere.', type: 'number', min: 0, max: 1, step: 0.01 },
       { path: 'sky.saturation', label: 'Sky saturation', description: 'Color intensity of the sky grade.', type: 'number', min: 0, max: 1.5, step: 0.01 }
+    ]
+  },
+  {
+    title: 'Stars',
+    description: 'Small glowing points visible in the night sky.',
+    controls: [
+      { path: 'stars.enabled', label: 'Enabled', description: 'Show or hide the star field for this theme.', type: 'boolean' },
+      { path: 'stars.color', label: 'Star color', description: 'Core color of the tiny star points.', type: 'color' },
+      { path: 'stars.glowColor', label: 'Glow color', description: 'Soft glow color around brighter stars.', type: 'color' },
+      { path: 'stars.count', label: 'Count', description: 'Number of stars in the upper sky.', type: 'number', min: 0, max: 320, step: 1 },
+      { path: 'stars.size', label: 'Size', description: 'Small point size for the stars.', type: 'number', min: 0.3, max: 3, step: 0.05 },
+      { path: 'stars.opacity', label: 'Opacity', description: 'Overall star visibility.', type: 'number', min: 0, max: 1, step: 0.01 },
+      { path: 'stars.glow', label: 'Glow', description: 'Extra glow layer around brighter stars.', type: 'number', min: 0, max: 1, step: 0.01 },
+      { path: 'stars.twinkle', label: 'Twinkle', description: 'Subtle animated brightness variation.', type: 'number', min: 0, max: 1, step: 0.01 }
     ]
   },
   {

@@ -1,29 +1,29 @@
 :root {
   --ink: #0D1B2E;
   --muted: rgba(13, 27, 46, 0.68);
-  --glass: rgba(246, 249, 252, 0.74);
-  --glass-strong: rgba(246, 249, 252, 0.92);
-  --stage-bg: #EAF3FF;
+  --glass: rgba(246, 249, 252, 0.53);
+  --glass-strong: rgba(246, 249, 252, 0.67);
+  --stage-bg: #F6F9FC;
   --stage-overlay:
-    linear-gradient(180deg, rgba(234, 243, 255, 0.16), rgba(214, 228, 243, 0.05) 45%, rgba(47, 78, 113, 0.08)),
-    radial-gradient(circle at 46% 24%, rgba(255, 255, 255, 0.36), transparent 8%);
-  --panel-border: rgba(128, 159, 189, 0.32);
-  --nav-bg: linear-gradient(135deg, rgba(246, 249, 252, 0.88), rgba(214, 228, 243, 0.58));
-  --panel-shadow: 0 20px 50px rgba(47, 78, 113, 0.22);
-  --toggle-glow: rgba(44, 183, 255, 0.3);
-  --card-shell-border: rgba(44, 183, 255, 0.72);
-  --card-shell-fill: rgba(44, 183, 255, 0.08);
-  --card-shell-beam: rgba(44, 183, 255, 0.42);
-  --card-shell-glow: rgba(44, 183, 255, 0.34);
-  --card-shell-inset: rgba(246, 249, 252, 0.28);
-  --card-material-bg: rgba(246, 249, 252, 0.92);
-  --card-material-border: rgba(182, 204, 227, 0.78);
-  --card-shadow: 0 24px 60px rgba(47, 78, 113, 0.3);
+    linear-gradient(180deg, rgba(252, 252, 253, 0.18), transparent 36%, rgba(236, 240, 244, 0.12)),
+    radial-gradient(circle at 48% 20%, rgba(44, 183, 255, 0.03), transparent 16%);
+  --panel-border: rgba(44, 183, 255, 0.17);
+  --nav-bg: linear-gradient(135deg, rgba(246, 249, 252, 0.61), rgba(246, 249, 252, 0.36));
+  --panel-shadow: 0 20px 52px rgba(0, 0, 0, 0.15);
+  --toggle-glow: rgba(44, 183, 255, 0.26);
+  --card-shell-border: #2CB7FF;
+  --card-shell-fill: rgba(44, 183, 255, 0.09);
+  --card-shell-beam: rgba(44, 183, 255, 0.36);
+  --card-shell-glow: rgba(44, 183, 255, 0.26);
+  --card-shell-inset: rgba(246, 249, 252, 0.53);
+  --card-material-bg: rgba(246, 249, 252, 0.63);
+  --card-material-border: rgba(44, 183, 255, 0.31);
+  --card-shadow: 0 26px 70px rgba(0, 0, 0, 0.15);
   --card-visual:
     linear-gradient(160deg, rgba(234, 243, 255, 0.9) 0 48%, transparent 49%),
     linear-gradient(20deg, transparent 0 54%, rgba(44, 183, 255, 0.36) 55%),
-    linear-gradient(145deg, #EAF3FF, #B6CCE3 45%, #2CB7FF);
+    linear-gradient(145deg, #EAF3FF, #B0D0F1 45%, #2CB7FF);
   --accent: #2CB7FF;
   --link-accent: #0A67C7;
-  --sweep: rgba(246, 249, 252, 0.72);
+  --sweep: rgba(44, 183, 255, 0.37);
 }
