@@ -9,11 +9,11 @@ window.PORTFOLIO_CONTENT = {
       id: 'intro',
       title: 'Intro',
       markerLabel: 'INTRO',
-      heading: 'Backend Engineer for Scale',
-      description: 'I build backend systems where latency, reliability, scale, and system design matter.',
+      heading: 'Softwate Engineer for Scale',
+      description: 'I build systems where latency, reliability, scale, and system design matter.',
       bullets: [
         '~5 years across Myntra, AJIO, and Interra Systems',
-        'Java, Spring Boot, Kafka, Kubernetes, Redis',
+        'Java, Spring Boot, Kafka, Kubernetes, Redis, Angular',
         'Distributed systems + GenAI engineering workflows'
       ],
       sectionType: 'overview',
@@ -30,7 +30,7 @@ window.PORTFOLIO_CONTENT = {
       description: 'Worked on high-traffic platform systems, performance optimization, Redis migration, Kubernetes tuning, and backend modernization.',
       bullets: [
         'Reduced critical API latency from 900ms to 250ms',
-        'Freed 178+ CPU cores through Kubernetes optimization',
+        'Modernized a 15-year-old monolith to Springboot',
         'Led Redis migration for P0/P1 services handling 3M+ RPM / 8M peak'
       ],
       sectionType: 'experience',
@@ -48,7 +48,7 @@ window.PORTFOLIO_CONTENT = {
       bullets: [
         'Scaled AjioAds for 10K+ sellers and ₹40Cr+ revenue',
         'Built Ajiogram social features using Spring Boot and MongoDB',
-        'Designed multi-tenant approval workflow using HLD/LLD and state-machine approach'
+        'Spearheaded architecture of scalable backend services for critical workflows'
       ],
       sectionType: 'experience',
       fullProfileAnchor: 'profile-ajio',
@@ -80,7 +80,7 @@ window.PORTFOLIO_CONTENT = {
       heading: 'Agentic AI / RAG Work',
       description: 'Exploring how LLMs, RAG, and multi-agent systems can improve engineering productivity.',
       bullets: [
-        'Microsoft AutoGen multi-agent workflows',
+        'Custom MCP servers and multi-agent workflows',
         'Automated RCA and codebase understanding',
         'Engineering documentation generation'
       ],
@@ -91,10 +91,10 @@ window.PORTFOLIO_CONTENT = {
       active: false
     },
     {
-      id: 'projects-contact',
-      title: 'Projects + Contact',
-      markerLabel: 'CONTACT',
-      heading: 'Projects + Contact',
+      id: 'projects',
+      title: 'Selected Projects',
+      markerLabel: 'PROJECTS',
+      heading: 'Selected Projects',
       description: 'Selected work beyond company projects, including AI workflows, 3D portfolio, and Android impact projects.',
       bullets: [
         'Agentic AI codebase understanding system',
@@ -104,6 +104,23 @@ window.PORTFOLIO_CONTENT = {
       sectionType: 'projects',
       fullProfileAnchor: 'profile-projects',
       progress: 0.84,
+      completed: false,
+      active: false
+    },
+    {
+      id: 'contact',
+      title: 'Contact',
+      markerLabel: 'CONTACT',
+      heading: 'Contact',
+      description: 'Open to senior backend engineering roles in large-scale infrastructure, distributed systems, and AI-driven platforms.',
+      bullets: [
+        'Email: niteshjitender@gmail.com',
+        'LinkedIn: linkedin.com/in/jitender-singh-chhapola',
+        'Website: jitendersinghchhapola.com'
+      ],
+      sectionType: 'contact',
+      fullProfileAnchor: 'profile-contact',
+      progress: 0.98,
       completed: false,
       active: false
     }

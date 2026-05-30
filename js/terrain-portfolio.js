@@ -17,7 +17,7 @@ Promise.all([
   const themes = window.PORTFOLIO_THEMES || {};
   const content = window.PORTFOLIO_CONTENT || {};
   const themeStylesheet = document.querySelector('#theme-stylesheet');
-  const themeToggle = document.querySelector('#theme-toggle');
+  const themeToggles = document.querySelectorAll('.theme-toggle');
   const freeRoamToggle = document.querySelector('#free-roam-toggle');
   const resetJourneyButton = document.querySelector('#reset-journey');
   const modeHelper = document.querySelector('#mode-helper');
@@ -85,12 +85,13 @@ Promise.all([
   const sectionMarkers = [];
   const clock = new THREE.Clock();
   const keys = new Set();
+  const mobileInput = { forward: false, backward: false, left: false, right: false };
 
   initThemeControls();
   initViewRouting();
   initJourneyControls();
   initJourneyProgress();
-  initMobileJourneyFallback();
+  initVirtualJoystick();
   init();
   renderRoute();
 
@@ -160,11 +161,12 @@ Promise.all([
   function initThemeControls() {
     applyThemeDocument();
 
-    if (!themeToggle) return;
-
-    themeToggle.addEventListener('click', () => {
-      const nextTheme = activeThemeName === 'night' ? 'day' : 'night';
-      switchTheme(nextTheme);
+    if (!themeToggles.length) return;
+    
+    themeToggles.forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        switchTheme(activeThemeName === 'night' ? 'day' : 'night');
+      });
     });
   }
 
@@ -226,16 +228,74 @@ Promise.all([
     updateJourneyProgress();
   }
 
-  function initMobileJourneyFallback() {
-    if (!mobileMarkerList || !journeyMarkers.length) return;
+  function initVirtualJoystick() {
+    const joystickBase = document.getElementById('joystick-base');
+    const joystickStick = document.getElementById('joystick-stick');
+    if (!joystickBase || !joystickStick) return;
 
-    mobileMarkerList.innerHTML = journeyMarkers.map((marker, index) => (
-      `<article class="mobile-marker-card">
-        <h3>${index + 1}. ${marker.title}</h3>
-        <p>${marker.description}</p>
-        <a href="#${marker.fullProfileAnchor}">View Details</a>
-      </article>`
-    )).join('');
+    let activeTouchId = null;
+    let baseRect = null;
+
+    function resetJoystick() {
+      mobileInput.forward = false;
+      mobileInput.backward = false;
+      mobileInput.left = false;
+      mobileInput.right = false;
+      joystickStick.style.transform = 'translate(-50%, -50%)';
+      activeTouchId = null;
+    }
+
+    joystickBase.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (activeTouchId !== null) return;
+      const touch = e.changedTouches[0];
+      activeTouchId = touch.identifier;
+      baseRect = joystickBase.getBoundingClientRect();
+      handleTouchMove(touch);
+    }, { passive: false });
+
+    joystickBase.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === activeTouchId) {
+          handleTouchMove(e.changedTouches[i]);
+          break;
+        }
+      }
+    }, { passive: false });
+
+    joystickBase.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === activeTouchId) {
+          resetJoystick();
+          break;
+        }
+      }
+    }, { passive: false });
+
+    joystickBase.addEventListener('touchcancel', resetJoystick);
+
+    function handleTouchMove(touch) {
+      if (!baseRect) return;
+      const centerX = baseRect.left + baseRect.width / 2;
+      const centerY = baseRect.top + baseRect.height / 2;
+      const radius = baseRect.width / 2;
+      let deltaX = touch.clientX - centerX;
+      let deltaY = touch.clientY - centerY;
+      
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      if (distance > radius) {
+        deltaX = (deltaX / distance) * radius;
+        deltaY = (deltaY / distance) * radius;
+      }
+      joystickStick.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+      const threshold = radius * 0.2;
+      mobileInput.forward = deltaY < -threshold;
+      mobileInput.backward = deltaY > threshold;
+      mobileInput.left = deltaX < -threshold;
+      mobileInput.right = deltaX > threshold;
+    }
   }
 
   function moveToPathProgress(progress) {
@@ -427,12 +487,14 @@ Promise.all([
       metaTheme.setAttribute('content', activeTheme.meta);
     }
 
-    if (themeToggle) {
+    if (themeToggles.length) {
       const nextTheme = activeThemeName === 'night' ? 'day' : 'night';
       const nextThemeLabel = themes[nextTheme]?.modeLabel || nextTheme;
-      themeToggle.textContent = activeTheme.modeLabel || activeThemeName.toUpperCase();
-      themeToggle.title = activeTheme.helperText || '';
-      themeToggle.setAttribute('aria-label', `Switch to ${nextThemeLabel}`);
+      themeToggles.forEach(toggle => {
+        toggle.innerHTML = `<span class="theme-text">${activeTheme.modeLabel || activeThemeName.toUpperCase()}</span>`;
+        toggle.title = activeTheme.helperText || '';
+        toggle.setAttribute('aria-label', `Switch to ${nextThemeLabel}`);
+      });
     }
 
     if (modeHelper) {
@@ -1165,10 +1227,10 @@ Promise.all([
   }
 
   function updatePathMovement(delta) {
-    const forward = keys.has('w') || keys.has('arrowup');
-    const backward = keys.has('s') || keys.has('arrowdown');
-    const left = keys.has('a') || keys.has('arrowleft');
-    const right = keys.has('d') || keys.has('arrowright');
+    const forward = keys.has('w') || keys.has('arrowup') || mobileInput.forward;
+    const backward = keys.has('s') || keys.has('arrowdown') || mobileInput.backward;
+    const left = keys.has('a') || keys.has('arrowleft') || mobileInput.left;
+    const right = keys.has('d') || keys.has('arrowright') || mobileInput.right;
     const speedTarget = forward ? 1 : backward ? -0.62 : 0;
     const steerTarget = (left ? 1 : 0) - (right ? 1 : 0);
     const speedSmoothing = speedTarget === 0 ? 1.8 : 5.8;
@@ -1276,7 +1338,7 @@ Promise.all([
 
     const speed01 = THREE.MathUtils.clamp(Math.abs(rideMotion.speed), 0, 1);
     const walkBounce = Math.sin(rideMotion.phase * 2.05) * speed01;
-    const hasStrideInput = keys.has('w') || keys.has('s') || keys.has('arrowup') || keys.has('arrowdown');
+    const hasStrideInput = keys.has('w') || keys.has('s') || keys.has('arrowup') || keys.has('arrowdown') || mobileInput.forward || mobileInput.backward;
     const isWalking = currentView === 'journey' && hasStrideInput && speed01 > 0.055;
 
     if (horseMixer && isWalking) {

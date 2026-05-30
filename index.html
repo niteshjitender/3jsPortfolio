@@ -4,14 +4,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Jitender Singh Chhapola portfolio — senior backend engineer, distributed systems, and interactive 3D journey.">
+  <meta name="description"
+    content="Jitender Singh Chhapola portfolio — senior software engineer, distributed systems, and interactive 3D journey.">
   <meta name="author" content="Jitender Singh Chhapola">
   <meta name="theme-color" content="#F0F6FF">
 
   <meta property="og:url" content="https://jitendersinghchhapola.com/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Jitender Singh Chhapola — Senior Backend Engineer">
-  <meta property="og:description" content="Senior Backend Engineer building scalable distributed systems for high-traffic e-commerce platforms.">
+  <meta property="og:title" content="Jitender Singh Chhapola — Senior Software Engineer">
+  <meta property="og:description"
+    content="Senior Software Engineer building scalable distributed systems for high-traffic e-commerce platforms.">
   <meta property="og:image" content="./assets/img/preview.png">
 
   <title>Jitender Singh Chhapola — Portfolio</title>
@@ -33,6 +35,7 @@
       <nav class="landing-nav" aria-label="Landing navigation">
         <a class="landing-brand" href="#landing">PORTFOLIO</a>
         <div class="landing-links">
+          <button class="theme-toggle" type="button" aria-label="Switch theme">Theme</button>
           <a href="assets/Jitender_Singh_Chhapola_Resume.pdf" download>Resume</a>
           <a href="https://linkedin.com/in/jitender-singh-chhapola" target="_blank" rel="noreferrer">LinkedIn</a>
           <a href="mailto:niteshjitender@gmail.com">Contact</a>
@@ -51,12 +54,12 @@
             <span class="my-name">I'm Jitender Singh Chhapola</span>
             <div class="highlights-rotator-wrapper">
               <div class="highlights-rotator">
-                <span>Backend Engineer</span>
+                <span>Backend & UI Engineer</span>
                 <span>Distributed Systems</span>
                 <span>Java & Spring Boot</span>
                 <span>Kubernetes & Kafka</span>
                 <span>Redis & Microservices</span>
-                <span aria-hidden="true">Backend Engineer</span>
+                <span aria-hidden="true">Backend & UI Engineer</span>
               </div>
             </div>
           </div>
@@ -87,7 +90,8 @@
 
       <div class="journey-actions">
         <div class="mode-control">
-          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to night theme">DAY — Professional Mode</button>
+          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to night theme">DAY —
+            Professional Mode</button>
           <span id="mode-helper">Focused recruiter view</span>
         </div>
         <button class="hud-link hud-button" id="free-roam-toggle" type="button" aria-pressed="false">Free Roam</button>
@@ -97,11 +101,11 @@
       </div>
     </div>
 
-    <section class="mobile-journey-fallback" aria-label="Mobile journey summary">
-      <p class="eyebrow">Interactive Journey</p>
-      <h2>Career markers at a glance</h2>
-      <div class="mobile-marker-list" id="mobile-marker-list"></div>
-    </section>
+    <div class="mobile-joystick" id="mobile-joystick" aria-label="Virtual Joystick">
+      <div class="joystick-base" id="joystick-base">
+        <div class="joystick-stick" id="joystick-stick"></div>
+      </div>
+    </div>
 
     <button class="quick-profile-button" type="button" data-route="#profile">
       ⚡ Quick Profile
@@ -147,11 +151,13 @@
       <section class="profile-hero profile-section" id="profile-overview">
         <div>
           <p class="eyebrow">Full Profile / Recruiter View</p>
-          <h1>Senior Backend Engineer building scalable distributed systems for high-traffic e-commerce platforms.</h1>
-          <p>I have ~5 years of experience across Myntra, AJIO, and Interra Systems, working on microservices, distributed systems, Kubernetes, Kafka, Redis, and performance optimization. I enjoy solving backend problems where scale, reliability, latency, and system design matter.</p>
+          <h1>Senior Backend & UI Engineer building scalable distributed systems and interactive web experiences for high-traffic platforms.</h1>
+          <p>I have ~5 years of experience across Myntra, AJIO, and Interra Systems. While I specialize in backend microservices, distributed systems, and performance optimization, I also have strong experience in designing and building engaging user interfaces. I enjoy solving problems where scale, reliability, and end-to-end system design matter.</p>
           <div class="profile-actions">
-            <a class="button button-primary" href="assets/Jitender_Singh_Chhapola_Resume.pdf" download>Download Resume</a>
-            <a class="button button-secondary" href="https://linkedin.com/in/jitender-singh-chhapola" target="_blank" rel="noreferrer">LinkedIn</a>
+            <a class="button button-primary" href="assets/Jitender_Singh_Chhapola_Resume.pdf" download>Download
+              Resume</a>
+            <a class="button button-secondary" href="https://linkedin.com/in/jitender-singh-chhapola" target="_blank"
+              rel="noreferrer">LinkedIn</a>
             <a class="button button-secondary" href="mailto:niteshjitender@gmail.com">Contact Me</a>
             <a class="button button-ghost" href="#journey">Start Interactive Journey</a>
           </div>
@@ -187,9 +193,11 @@
           <h2>I build backend systems that hold up at scale.</h2>
         </div>
         <div class="summary-card">
-          <p>My experience spans high-traffic e-commerce platforms, distributed systems, microservices, Kubernetes-based infrastructure, Redis/Kafka-backed systems, and performance-critical APIs.</p>
-          <p>At Myntra and AJIO, I have worked on systems handling millions of requests per minute, seller platforms, product discovery, platform modernization, Redis migration, and Kubernetes optimization.</p>
-          <p>Recently, I have also been exploring Agentic AI workflows using Microsoft AutoGen, RAG, and multi-agent orchestration for automated RCA, codebase understanding, and engineering documentation.</p>
+          <p>My experience spans high-traffic e-commerce platforms, distributed systems, microservices, Kubernetes-based
+            infrastructure, Redis/Kafka-backed systems, and performance-critical APIs.</p>
+          <p>At Myntra and AJIO, I have worked on systems handling millions of requests per minute, seller platforms,
+            product discovery, platform modernization, Redis migration, and Kubernetes optimization.</p>
+          <p>Recently, I have also been exploring Agentic AI workflows, RAG, and multi-agent orchestration. I have built and integrated custom MCP (Model Context Protocol) servers powered by high-confidence data for automated RCA, codebase understanding, and engineering documentation.</p>
         </div>
       </section>
 
@@ -199,12 +207,30 @@
           <h2>Grouped by engineering context.</h2>
         </div>
         <div class="tech-grid">
-          <article><h3>Backend</h3><p>Java, Spring Boot, Node.js, TypeScript, REST APIs, Microservices</p></article>
-          <article><h3>Distributed Systems</h3><p>Kafka, Redis, Kubernetes, Docker, Event-driven Architecture</p></article>
-          <article><h3>Databases & Search</h3><p>MongoDB, PostgreSQL, Elasticsearch</p></article>
-          <article><h3>System Design</h3><p>HLD, LLD, Multi-tenant Systems, State Machines, Performance Optimization</p></article>
-          <article><h3>AI Engineering</h3><p>Microsoft AutoGen, RAG, Multi-agent Workflows, Codebase Understanding</p></article>
-          <article><h3>Tools / Other</h3><p>Linux, Git, Webhooks, Slack/MS Teams integrations, Selenium</p></article>
+          <article>
+            <h3>Backend</h3>
+            <p>Java, Spring Boot, Node.js, TypeScript, REST APIs, Microservices</p>
+          </article>
+          <article>
+            <h3>Distributed Systems</h3>
+            <p>Kafka, Redis, Kubernetes, Docker, Event-driven Architecture</p>
+          </article>
+          <article>
+            <h3>Databases & Search</h3>
+            <p>MongoDB, PostgreSQL, Elasticsearch</p>
+          </article>
+          <article>
+            <h3>System Design</h3>
+            <p>HLD, LLD, Multi-tenant Systems, State Machines, Performance Optimization</p>
+          </article>
+          <article>
+            <h3>AI Engineering</h3>
+            <p>MCP Servers, RAG, Multi-agent Workflows, Codebase Understanding</p>
+          </article>
+          <article>
+            <h3>Tools / Other</h3>
+            <p>Linux, Git, Webhooks, Slack/MS Teams integrations, Selenium</p>
+          </article>
         </div>
       </section>
 
@@ -215,36 +241,50 @@
         </div>
         <div class="experience-list">
           <article class="experience-card" id="profile-myntra">
-            <div><h3>Myntra — Senior Software Engineer</h3><span>December 2024 – Present</span></div>
+            <div>
+              <h3>Myntra — Senior Software Engineer</h3><span>December 2024 – Present</span>
+            </div>
             <ul>
               <li>Reduced critical API latency from 900ms to 250ms by optimizing service architecture, request flow, and backend bottlenecks.</li>
-              <li>Freed 178+ CPU cores through Kubernetes resource optimization and workload tuning.</li>
+              <li>Architected and deployed highly available microservices ensuring 99.99% uptime during peak e-commerce sale events.</li>
               <li>Led zero-downtime Redis migration for P0/P1 services handling 3M+ RPM and 8M peak traffic.</li>
               <li>Modernized a 15-year-old monolith to Spring Boot, reducing build time by 91%.</li>
-              <li>Designed Agentic AI workflows using Microsoft AutoGen, RAG, and multi-agent orchestration for RCA, codebase understanding, and documentation.</li>
+              <li>Designed Agentic AI workflows using RAG and multi-agent orchestration, integrating custom-built MCP servers with high-confidence data.</li>
             </ul>
           </article>
           <article class="experience-card" id="profile-ajio">
-            <div><h3>AJIO — Software Developer</h3><span>March 2023 – December 2024</span></div>
+            <div>
+              <h3>AJIO — Software Developer</h3><span>March 2023 – December 2024</span>
+            </div>
             <ul>
-              <li>Scaled AjioAds microservice using Docker and Kubernetes, supporting 10K+ sellers and ₹40Cr+ revenue.</li>
-              <li>Increased brand engagement by ~30% across 400+ brands by building Ajiogram social features using Spring Boot and MongoDB.</li>
+              <li>Scaled AjioAds microservice using Docker and Kubernetes, supporting 10K+ sellers and ₹40Cr+ revenue.
+              </li>
+              <li>Increased brand engagement by ~30% across 400+ brands by building Ajiogram social features using
+                Spring Boot and MongoDB.</li>
               <li>Boosted ad sales by 30% through a bulk campaign upload system for sellers.</li>
-              <li>Designed and led HLD/LLD for a multi-tenant approval workflow using a state-machine model.</li>
-              <li>Revamped seller onboarding through cross-team microservice integration using Node.js, TypeScript, Kafka, and MongoDB.</li>
+              <li>Spearheaded the architecture and implementation of scalable backend services for critical e-commerce workflows, significantly improving system reliability.</li>
+              <li>Revamped seller onboarding through cross-team microservice integration using Node.js, TypeScript,
+                Kafka, and MongoDB.</li>
             </ul>
           </article>
           <article class="experience-card" id="profile-interra">
-            <div><h3>Interra Systems — Full Stack Software Developer</h3><span>July 2021 – March 2023</span></div>
+            <div>
+              <h3>Interra Systems — Full Stack Software Developer</h3><span>July 2021 – March 2023</span>
+            </div>
             <ul>
-              <li>Built full-stack components using Spring Boot and Angular, integrating PostgreSQL, Kafka, and Elasticsearch for ~1200 QPS workflows.</li>
-              <li>Designed real-time alerting systems handling 1500+ QPS with Slack, SNMP, and MS Teams integrations.</li>
+              <li>Built full-stack components using Spring Boot and Angular, integrating PostgreSQL, Kafka, and
+                Elasticsearch for ~1200 QPS workflows.</li>
+              <li>Designed real-time alerting systems handling 1500+ QPS with Slack, SNMP, and MS Teams integrations.
+              </li>
               <li>Developed customer-facing Angular components to improve usability and responsiveness.</li>
-              <li>Managed Linux deployments on client systems, including compatibility fixes and RPM build/installation.</li>
+              <li>Managed Linux deployments on client systems, including compatibility fixes and RPM build/installation.
+              </li>
             </ul>
           </article>
           <article class="experience-card">
-            <div><h3>Cerebry — AI Software Developer</h3><span>January 2020 – June 2020</span></div>
+            <div>
+              <h3>Cerebry — AI Software Developer</h3><span>January 2020 – June 2020</span>
+            </div>
             <ul>
               <li>Designed automated question set generation using Prolog, Python, and CHR.</li>
               <li>Built Python and Selenium automation to reduce LaTeX writing effort by 40%.</li>
@@ -260,9 +300,20 @@
           <h2>Only the strongest supporting work.</h2>
         </div>
         <div class="project-grid">
-          <article><h3>Agentic AI Codebase Understanding System</h3><p>Multi-agent workflow using Microsoft AutoGen for repository understanding, RCA, documentation, and service dependency analysis.</p><span>AutoGen · RAG · Agents · Python · Codebase Analysis</span></article>
-          <article><h3>Interactive 3D Portfolio</h3><p>Three.js-based interactive terrain portfolio with journey-based navigation, day/night mode, recruiter quick view, and cinematic profile exploration.</p><span>Three.js · JavaScript · UI/UX · Portfolio</span></article>
-          <article><h3>AnimalX</h3><p>Android app for NGO workflows to track injured animals, recovery status, and operational records.</p><span>Android · Mobile App · Social Impact</span></article>
+          <article>
+            <h3>Agentic AI Codebase Understanding System</h3>
+            <p>Multi-agent workflow using custom MCP servers and high-confidence data for repository understanding, RCA, documentation, and service dependency analysis.</p><span>MCP Servers · RAG · Agents · Python · Codebase Analysis</span>
+          </article>
+          <article>
+            <h3>Interactive 3D Portfolio</h3>
+            <p>Three.js-based interactive terrain portfolio with journey-based navigation, day/night mode, recruiter
+              quick view, and cinematic profile exploration.</p><span>Three.js · JavaScript · UI/UX · Portfolio</span>
+          </article>
+          <article>
+            <h3>AnimalX</h3>
+            <p>Android app for NGO workflows to track injured animals, recovery status, and operational records.</p>
+            <span>Android · Mobile App · Social Impact</span>
+          </article>
         </div>
       </section>
 
@@ -272,13 +323,14 @@
           <h2>Current Focus: Agentic AI for Engineering Systems</h2>
         </div>
         <div class="focus-card">
-          <p>I am exploring how LLMs, RAG, and multi-agent workflows can improve engineering productivity in large codebases.</p>
+          <p>I am exploring how LLMs, RAG, and multi-agent workflows can improve engineering productivity in large
+            codebases.</p>
           <ul>
             <li>Automated root cause analysis</li>
             <li>Repository understanding</li>
             <li>Service dependency mapping</li>
             <li>Engineering documentation generation</li>
-            <li>Multi-agent workflows using Microsoft AutoGen</li>
+            <li>Multi-agent workflows and custom MCP servers</li>
           </ul>
         </div>
       </section>
@@ -307,12 +359,15 @@
       <section class="profile-section contact-section" id="profile-contact">
         <div class="section-heading">
           <p class="eyebrow">Contact</p>
-          <h2>Open to senior backend engineering roles in large-scale infrastructure, distributed systems, and AI-driven engineering platforms.</h2>
+          <h2>Open to senior backend engineering roles in large-scale infrastructure, distributed systems, and AI-driven
+            engineering platforms.</h2>
         </div>
         <div class="contact-grid">
           <a href="mailto:niteshjitender@gmail.com"><span>Email</span>niteshjitender@gmail.com</a>
-          <a href="https://linkedin.com/in/jitender-singh-chhapola" target="_blank" rel="noreferrer"><span>LinkedIn</span>linkedin.com/in/jitender-singh-chhapola</a>
-          <a href="https://jitendersinghchhapola.com/" target="_blank" rel="noreferrer"><span>Website</span>jitendersinghchhapola.com</a>
+          <a href="https://linkedin.com/in/jitender-singh-chhapola" target="_blank"
+            rel="noreferrer"><span>LinkedIn</span>linkedin.com/in/jitender-singh-chhapola</a>
+          <a href="https://jitendersinghchhapola.com/" target="_blank"
+            rel="noreferrer"><span>Website</span>jitendersinghchhapola.com</a>
           <div><span>Location</span>Bengaluru, Karnataka, India</div>
         </div>
       </section>

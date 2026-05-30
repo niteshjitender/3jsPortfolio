@@ -332,13 +332,13 @@ a {
 }
 
 .journey-step-track {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  display: flex;
   gap: 6px;
   margin: 12px 0 10px;
 }
 
 .journey-step {
+  flex: 1;
   height: 9px;
   padding: 0;
   border: 0;
@@ -685,8 +685,38 @@ a {
   font-size: 1.05rem;
 }
 
-.mobile-journey-fallback {
+.mobile-joystick {
   display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 140px;
+  height: 140px;
+  z-index: 50;
+}
+
+.joystick-base {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  position: relative;
+  backdrop-filter: blur(8px);
+}
+
+.joystick-stick {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease-out;
+  pointer-events: none;
 }
 
 .section-card {
@@ -1167,7 +1197,7 @@ a {
 
 @media (max-width: 760px) {
   body[data-view="journey"] {
-    overflow: auto;
+    overflow: hidden;
   }
 
   .landing-nav,
@@ -1198,92 +1228,225 @@ a {
 
   #terrain-canvas {
     position: fixed;
-    opacity: 0.42;
+    opacity: 1;
+  }
+
+  /* Hide unnecessary elements */
+  .controls-hint {
+    display: none !important;
   }
 
   .journey-hud {
-    position: sticky;
-    top: 0;
-    padding: 12px;
-    background: linear-gradient(180deg, var(--stage-bg), transparent);
+    position: static;
+    background: none;
+    padding: 0;
   }
 
-  .journey-progress,
-  .journey-actions {
-    width: 100%;
-  }
-
-  .journey-actions {
-    flex-wrap: wrap;
-    border-radius: 20px;
-  }
-
-  .theme-toggle {
-    min-width: min(100%, 230px);
-  }
-
-  .mobile-journey-fallback {
-    position: relative;
-    z-index: 20;
-    display: block;
-    width: min(520px, calc(100% - 28px));
-    margin: 210px auto 110px;
-    padding: 22px;
-    border: 1px solid var(--panel-border);
-    border-radius: 24px;
-    background: var(--glass-strong);
-    box-shadow: var(--panel-shadow);
-    backdrop-filter: blur(22px);
-  }
-
-  .mobile-journey-fallback h2 {
-    margin: 0 0 18px;
-    color: var(--ink);
-    font-size: 2rem;
-    line-height: 1;
-  }
-
-  .mobile-marker-list {
-    display: grid;
-    gap: 12px;
-  }
-
-  .mobile-marker-card {
-    display: grid;
+  /* ── Journey Progress: vertical bar on left ── */
+  .journey-progress {
+    position: fixed;
+    top: 28%;
+    left: 16px;
+    transform: none;
+    width: auto;
+    height: auto;
+    background: none;
+    border-radius: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 8px;
-    padding: 16px;
-    border: 1px solid var(--panel-border);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    z-index: 40;
   }
 
-  .mobile-marker-card h3,
-  .mobile-marker-card p {
-    margin: 0;
+  .journey-progress div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
   }
 
-  .mobile-marker-card p {
-    color: var(--muted);
-  }
-
-  .mobile-marker-card a {
+  .journey-progress div:first-child span {
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    font-size: 0;
+    font-weight: 800;
     color: var(--link-accent);
-    font-weight: 900;
-    text-decoration: none;
+    letter-spacing: 0.08em;
+    transform: rotate(180deg);
   }
 
-  .controls-hint {
+  .journey-progress div:first-child span::before {
+    content: 'Journey';
+    font-size: 0.7rem;
+  }
+
+  .journey-progress div:first-child span::after {
+    content: '';
+    display: block;
+    width: 16px;
+    height: 2px;
+    background: var(--link-accent);
+    margin-top: 4px;
+    border-radius: 1px;
+  }
+
+  .journey-progress div:first-child strong {
     display: none;
   }
 
-  .quick-profile-button {
-    right: 16px;
-    bottom: 16px;
+  .journey-progress p {
+    display: none;
   }
 
-  .section-card {
+  .journey-step-track {
+    flex-direction: column-reverse;
+    height: min(280px, 36vh);
+    width: 6px;
+    gap: 0;
+    background: var(--glass-strong);
+    border-radius: 999px;
+    border: 1px solid var(--panel-border);
+  }
+
+  .journey-step {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+  .journey-step:first-child {
+    border-radius: 999px 999px 0 0;
+  }
+  .journey-step:last-child {
+    border-radius: 0 0 999px 999px;
+  }
+
+  /* ── Theme Toggle: top-right circle ── */
+  .mode-control {
+    margin: 0;
+  }
+
+  #mode-helper {
+    display: none;
+  }
+
+  .theme-toggle {
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .theme-toggle::after {
+    content: "🌙";
+    font-size: 1.2rem;
+  }
+
+  body[data-theme="night"] .theme-toggle::after {
+    content: "☀️";
+  }
+
+  .theme-toggle .theme-text {
+    display: none;
+  }
+
+  /* ── Journey Actions: right-side stacked pills ── */
+  .journey-actions {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: auto;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    background: none;
+    border: none;
+    padding: 0;
+    z-index: 40;
+  }
+
+  /* Hide Quick Profile link from the top actions (we show the floating button instead) */
+  a[href="#profile"].hud-link {
+    display: none;
+  }
+
+  /* Style the action buttons as pill chips */
+  #free-roam-toggle,
+  #reset-journey,
+  a[href="#landing"].hud-link {
+    position: relative;
+    width: auto;
+    padding: 10px 18px;
+    background: var(--glass-strong);
+    border: 1px solid var(--panel-border);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    backdrop-filter: blur(10px);
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  /* ── Quick Profile: above joystick with safe gap ── */
+  .quick-profile-button {
+    position: fixed !important;
+    bottom: 200px !important;
+    right: 24px !important;
+    z-index: 50 !important;
+    display: flex !important;
+    transform: none !important;
+    left: auto !important;
+    width: auto !important;
+    max-width: 180px !important;
+    padding: 0 16px !important;
+    min-height: 44px !important;
+    font-size: 0.85rem !important;
+  }
+
+  .quick-profile-button span {
     display: none !important;
   }
+
+  /* ── Joystick ── */
+  .mobile-joystick {
+    display: block;
+  }
+
+  /* ── Section Card: top-left, not centered ── */
+  .section-card {
+    top: 24px;
+    left: 16px;
+    right: auto;
+    transform: none !important;
+    width: min(280px, calc(100% - 100px));
+    transform-origin: 0 0;
+    z-index: 45;
+  }
+  .section-card.is-building {
+    transform: scale(1) !important;
+  }
+  .section-card.is-materialized {
+    transform: scale(1) !important;
+  }
+
+  #section-card-summary,
+  #section-card-list,
+  .section-card-visual {
+    display: none;
+  }
+
+  .section-card h1 {
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+  }
+
 
   .profile-shell {
     width: min(100% - 28px, 1120px);

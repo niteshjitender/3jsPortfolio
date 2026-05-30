@@ -13,7 +13,7 @@
       return;
     }
 
-    createThemeStudio(runtime);
+    // createThemeStudio(runtime);
   }
 
   function createThemeStudio(runtime) {
