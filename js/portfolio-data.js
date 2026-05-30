@@ -9,7 +9,7 @@ window.PORTFOLIO_CONTENT = {
       id: 'intro',
       title: 'Intro',
       markerLabel: 'INTRO',
-      heading: 'Softwate Engineer for Scale',
+      heading: 'Software Engineer for Scale',
       description: 'I build systems where latency, reliability, scale, and system design matter.',
       bullets: [
         '~5 years across Myntra, AJIO, and Interra Systems',
@@ -58,10 +58,10 @@ window.PORTFOLIO_CONTENT = {
     },
     {
       id: 'interra',
-      title: 'Interra — Full-stack + Integrations',
+      title: 'Interra — Backend & UI + Integrations',
       markerLabel: 'INTERRA',
-      heading: 'Interra — Full-stack + Integrations',
-      description: 'Built backend/full-stack workflows and real-time integrations for enterprise clients.',
+      heading: 'Interra — Backend & UI + Integrations',
+      description: 'Built backend and UI workflows and real-time integrations for enterprise clients.',
       bullets: [
         'Built Spring Boot + Angular workflows supporting ~1200 QPS',
         'Developed alerting systems handling 1500+ QPS',
