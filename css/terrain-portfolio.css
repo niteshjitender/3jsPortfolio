@@ -1202,13 +1202,32 @@ a {
 
   .landing-nav,
   .profile-nav {
-    align-items: flex-start;
-    flex-direction: column;
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   .landing-links,
   .profile-links {
     gap: 12px;
+  }
+
+  /* Landing nav theme toggle: circle on mobile */
+  .landing-links .theme-toggle {
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 0;
+  }
+  .landing-links .theme-toggle::after {
+    content: "🌙";
+    font-size: 1rem;
+  }
+  body[data-theme="night"] .landing-links .theme-toggle::after {
+    content: "☀️";
   }
 
   .landing-hero {
@@ -1245,8 +1264,8 @@ a {
   /* ── Journey Progress: vertical bar on left ── */
   .journey-progress {
     position: fixed;
-    top: 28%;
-    left: 16px;
+    top: 32%;
+    left: 14px;
     transform: none;
     width: auto;
     height: auto;
@@ -1254,10 +1273,12 @@ a {
     border-radius: 0;
     padding: 0;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     gap: 8px;
     border: none;
+    box-shadow: none;
+    backdrop-filter: none;
     z-index: 40;
   }
 
@@ -1265,7 +1286,7 @@ a {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
   }
 
   .journey-progress div:first-child span {
@@ -1274,23 +1295,17 @@ a {
     font-size: 0;
     font-weight: 800;
     color: var(--link-accent);
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     transform: rotate(180deg);
   }
 
   .journey-progress div:first-child span::before {
     content: 'Journey';
-    font-size: 0.7rem;
+    font-size: 0.65rem;
   }
 
   .journey-progress div:first-child span::after {
-    content: '';
-    display: block;
-    width: 16px;
-    height: 2px;
-    background: var(--link-accent);
-    margin-top: 4px;
-    border-radius: 1px;
+    display: none;
   }
 
   .journey-progress div:first-child strong {
@@ -1360,16 +1375,26 @@ a {
   /* ── Journey Actions: right-side stacked pills ── */
   .journey-actions {
     position: fixed;
-    top: 16px;
+    top: 90px;
     right: 16px;
     width: auto;
     flex-direction: column;
     align-items: flex-end;
-    gap: 10px;
+    gap: 8px;
     background: none;
     border: none;
+    box-shadow: none;
+    backdrop-filter: none;
     padding: 0;
     z-index: 40;
+  }
+
+  /* Theme toggle stays top-right corner separately */
+  .journey-actions .mode-control {
+    position: fixed;
+    top: 20px;
+    right: 16px;
+    z-index: 41;
   }
 
   /* Hide Quick Profile link from the top actions (we show the floating button instead) */
@@ -1382,7 +1407,9 @@ a {
   #reset-journey,
   a[href="#landing"].hud-link {
     position: relative;
-    width: auto;
+    width: 125px;
+    display: flex;
+    justify-content: center;
     padding: 10px 18px;
     background: var(--glass-strong);
     border: 1px solid var(--panel-border);
@@ -1399,10 +1426,13 @@ a {
     position: fixed !important;
     bottom: 200px !important;
     right: 24px !important;
+    left: auto !important;
     z-index: 50 !important;
     display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
     transform: none !important;
-    left: auto !important;
     width: auto !important;
     max-width: 180px !important;
     padding: 0 16px !important;
@@ -1419,13 +1449,13 @@ a {
     display: block;
   }
 
-  /* ── Section Card: top-left, not centered ── */
+  /* ── Section Card: top-left ── */
   .section-card {
-    top: 24px;
+    top: 20px;
     left: 16px;
     right: auto;
     transform: none !important;
-    width: min(280px, calc(100% - 100px));
+    width: min(240px, calc(100% - 120px));
     transform-origin: 0 0;
     z-index: 45;
   }
@@ -1443,8 +1473,8 @@ a {
   }
 
   .section-card h1 {
-    font-size: 1.4rem;
-    margin-bottom: 16px;
+    font-size: 1.2rem;
+    margin-bottom: 12px;
   }
 
 
@@ -1513,18 +1543,49 @@ a {
 @media (max-width: 900px) {
   .landing-bento-content {
     flex-direction: column;
-    padding: 40px;
+    padding: 20px;
     text-align: center;
-    margin-top: 80px;
+    margin-top: 60px;
+    gap: 32px;
+    min-height: auto;
+  }
+  .landing-bento-container {
+    padding: 20px;
   }
   .landing-bento-container .landing-nav {
     top: 20px;
+    width: min(1180px, calc(100% - 40px));
   }
   .bento-actions {
     justify-content: center;
   }
   .name-highlights-row {
     justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .profile-pic-container {
+    width: 220px;
+    height: 220px;
+  }
+  .welcome-message {
+    font-size: clamp(2rem, 7vw, 2.8rem);
+  }
+  .bento-right {
+    gap: 16px;
+  }
+  .bento-actions {
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .creative-journey-button {
+    height: 48px;
+    padding: 0 28px;
+    font-size: 0.95rem;
+  }
+  .bento-secondary-btn {
+    height: 48px;
+    font-size: 0.85rem !important;
   }
 }
 
@@ -1599,6 +1660,8 @@ a {
 .highlights-rotator span {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   height: 40px;
   line-height: 40px;
   color: var(--link-accent);
