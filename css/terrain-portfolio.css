@@ -1555,7 +1555,7 @@ body[data-theme="night"] .theme-toggle::after {
     flex-direction: column;
     padding: 20px;
     text-align: center;
-    margin-top: 60px;
+    margin-top: 110px;
     gap: 32px;
     min-height: auto;
   }
