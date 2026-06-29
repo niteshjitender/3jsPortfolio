@@ -1,3 +1,13 @@
-node_modules/*
-package-lock.json
+# Dependencies
+node_modules/
 package.json
+package-lock.json
+
+# Mac
+.DS_Store
+
+# Editor
+.vscode/
+
+# Archives
+portfolio.zip

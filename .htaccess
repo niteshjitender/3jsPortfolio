@@ -1,0 +1,18 @@
+# Add correct MIME types for 3D models and audio files
+<IfModule mod_mime.c>
+    AddType model/gltf-binary .glb
+    AddType model/gltf+json .gltf
+    AddType audio/mpeg .mp3
+    AddType audio/ogg .ogg
+    AddType audio/wav .wav
+</IfModule>
+
+# Enable GZIP compression for faster loading
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json model/gltf-binary model/gltf+json audio/mpeg
+</IfModule>
+
+# Handle CORS if needed (optional, uncomment if assets are blocked by CORS)
+# <IfModule mod_headers.c>
+#     Header set Access-Control-Allow-Origin "*"
+# </IfModule>
